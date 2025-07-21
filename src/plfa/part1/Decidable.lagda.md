@@ -377,10 +377,10 @@ Using these, we can easily derive that `T (m ≤ᵇ′ n)` is inhabited
 exactly when `m ≤ n` is inhabited:
 ```agda
 ≤ᵇ′→≤ : ∀ {m n : ℕ} → T (m ≤ᵇ′ n) → m ≤ n
-≤ᵇ′→≤  =  toWitness
+≤ᵇ′→≤ {m} {n} =  toWitness {m ≤ n} {m ≤? n}
 
 ≤→≤ᵇ′ : ∀ {m n : ℕ} → m ≤ n → T (m ≤ᵇ′ n)
-≤→≤ᵇ′  =  fromWitness
+≤→≤ᵇ′ {m} {n} =  fromWitness {m ≤ n} {m ≤? n}
 ```
 
 In summary, it is usually best to eschew booleans and rely on decidables.
