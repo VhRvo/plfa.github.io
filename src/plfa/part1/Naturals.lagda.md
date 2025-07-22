@@ -78,7 +78,8 @@ successor of two; and so on.
 Write out `7` in longhand.
 
 ```agda
--- Your code goes here
+_ : ℕ
+_ = suc (suc (suc (suc (suc (suc (suc zero))))))
 ```
 
 You will need to give both a type signature and definition for the
@@ -439,7 +440,8 @@ other word for evidence, which we will use interchangeably, is _proof_.
 Compute `3 + 4`, writing out your reasoning as a chain of equations, using the equations for `+`.
 
 ```agda
--- Your code goes here
+_ : 3 + 4 ≡ 7
+_ = refl
 ```
 
 
@@ -501,7 +503,8 @@ Compute `3 * 4`, writing out your reasoning as a chain of equations, using the e
 (You do not need to step through the evaluation of `+`.)
 
 ```agda
--- Your code goes here
+_ : 3 * 4 ≡ 12
+_ = refl
 ```
 
 
@@ -515,7 +518,12 @@ Define exponentiation, which is given by the following equations:
 Check that `3 ^ 4` is `81`.
 
 ```agda
--- Your code goes here
+_^_ : ℕ → ℕ → ℕ
+_ ^ zero  = 1
+m ^ suc n = m * (m ^ n)
+
+_ = 3 ^ 4 ≡ 81
+_ = refl {_} {_} {81}
 ```
 
 
@@ -598,7 +606,11 @@ Section [Logical Connectives](/Decidable/#logical-connectives).
 Compute `5 ∸ 3` and `3 ∸ 5`, writing out your reasoning as a chain of equations.
 
 ```agda
--- Your code goes here
+_ : 5 ∸ 3 ≡ 2
+_ = refl
+
+_ : 3 ∸ 5 ≡ 0
+_ = refl
 ```
 
 
@@ -949,7 +961,19 @@ represents a positive natural, and represent zero by `⟨⟩ O`.
 Confirm that these both give the correct answer for zero through four.
 
 ```agda
--- Your code goes here
+inc : Bin → Bin
+inc ⟨⟩         = ⟨⟩ I
+inc (prefix I) = (inc prefix) O
+inc (prefix O) = prefix I
+
+to   : ℕ → Bin
+to zero = ⟨⟩
+to (suc n) = inc (to n)
+
+from : Bin → ℕ
+from ⟨⟩    = zero
+from (n O) = from n * 2
+from (n I) = from n * 2 + 1
 ```
 
 
