@@ -718,7 +718,10 @@ first four days using a finite story of creation, as
 [earlier](/Naturals/#finite-creation).
 
 ```agda
--- Your code goes here
+-- (0 + 0) + 0 ≡ 0 + (0 + 0)   ...   (0 + 4) + 5 ≡ 0 + (4 + 5)   ...
+-- (1 + 0) + 0 ≡ 1 + (0 + 0)   ...   (1 + 4) + 5 ≡ 1 + (4 + 5)   ...
+-- (2 + 0) + 0 ≡ 2 + (0 + 0)   ...   (2 + 4) + 5 ≡ 2 + (4 + 5)   ...
+-- (3 + 0) + 0 ≡ 3 + (0 + 0)   ...   (3 + 4) + 5 ≡ 3 + (4 + 5)   ...
 ```
 
 ## Associativity with rewrite
@@ -890,7 +893,8 @@ just apply the previous results which show addition
 is associative and commutative.
 
 ```agda
--- Your code goes here
++-swap : (m n p : ℕ) → m + (n + p) ≡ n + (m + p)
++-swap m n p rewrite sym (+-assoc m n p) | +-comm m n | +-assoc n m p = refl
 ```
 
 
@@ -903,7 +907,20 @@ Show multiplication distributes over addition, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```agda
--- Your code goes here
+*-distrib-+ : (m n p : ℕ) → (m + n) * p ≡ m * p + n * p
+*-distrib-+ zero    n p = refl
+*-distrib-+ (suc m) n p =
+  begin
+    (suc m + n) * p
+  ≡⟨⟩
+    p + (m + n) * p
+  ≡⟨ cong (p +_) (*-distrib-+ m n p) ⟩
+    p + (m * p + n * p)
+  ≡⟨ sym (+-assoc p (m * p) (n * p)) ⟩
+    (p + m * p) + n * p
+  ≡⟨⟩
+    (suc m * p) + n * p
+  ∎
 ```
 
 
@@ -916,7 +933,20 @@ Show multiplication is associative, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```agda
--- Your code goes here
+*-assoc : (m n p : ℕ) → (m * n) * p ≡ m * (n * p)
+*-assoc zero    n p = refl
+*-assoc (suc m) n p =
+  begin
+    suc m * n * p
+  ≡⟨⟩
+    (n + m * n) * p
+  ≡⟨ *-distrib-+ n (m * n) p ⟩
+    n * p + m * n * p
+  ≡⟨ cong (n * p +_) (*-assoc m n p) ⟩
+    n * p + m * (n * p)
+  ≡⟨⟩
+    suc m * (n * p)
+  ∎
 ```
 
 
@@ -930,7 +960,44 @@ for all naturals `m` and `n`.  As with commutativity of addition,
 you will need to formulate and prove suitable lemmas.
 
 ```agda
--- Your code goes here
+*-zeroʳ : ∀ (m : ℕ) → m * zero ≡ zero
+*-zeroʳ zero    = refl
+*-zeroʳ (suc m) =
+  begin
+    suc m * zero
+  ≡⟨⟩
+    m * zero
+  ≡⟨ *-zeroʳ m ⟩
+    zero
+  ∎
+
+*-suc : (m n : ℕ) → m * suc n ≡ m + m * n
+*-suc zero    n = refl
+*-suc (suc m) n =
+  begin
+    suc m * suc n
+  ≡⟨⟩
+    suc (n + m * suc n)
+  ≡⟨ cong (λ k → suc (n + k)) (*-suc m n)  ⟩
+    suc (n + (m + m * n))
+  ≡⟨ cong suc (+-swap n m (m * n)) ⟩
+    suc (m + (n + m * n))
+  ≡⟨⟩
+    suc m + suc m * n
+  ∎
+
+*-comm : (m n : ℕ) → m * n ≡ n * m
+*-comm zero    n = sym (*-zeroʳ n)
+*-comm (suc m) n =
+  begin
+    suc m * n
+  ≡⟨⟩
+    n + m * n
+  ≡⟨ cong (n +_) (*-comm m n) ⟩
+    n + n * m
+  ≡⟨ sym (*-suc n m) ⟩
+    n * suc m
+  ∎
 ```
 
 
@@ -943,7 +1010,14 @@ Show
 for all naturals `n`. Did your proof require induction?
 
 ```agda
--- Your code goes here
+0∸n≡0 : (n : ℕ) → 0 ∸ n ≡ 0
+0∸n≡0 zero    = refl
+0∸n≡0 (suc n) =
+  begin
+    0 ∸ suc n
+  ≡⟨⟩
+    0
+  ∎
 ```
 
 
@@ -956,7 +1030,19 @@ Show that monus associates with addition, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```agda
--- Your code goes here
+∸-+-assoc : (m n p : ℕ) → m ∸ n ∸ p ≡ m ∸ (n + p)
+∸-+-assoc zero    n p =
+  begin
+    zero ∸ n ∸ p
+  ≡⟨ cong (_∸ p) (0∸n≡0 n) ⟩
+    zero ∸ p
+  ≡⟨ 0∸n≡0 p ⟩
+    0
+  ≡⟨ sym (0∸n≡0 (n + p)) ⟩
+    zero ∸ (n + p)
+  ∎
+∸-+-assoc (suc m) zero    p = refl
+∸-+-assoc (suc m) (suc n) p = ∸-+-assoc m n p
 ```
 
 
@@ -971,7 +1057,90 @@ Show the following three laws
 for all `m`, `n`, and `p`.
 
 ```
--- Your code goes here
+*-identityʳ : (n : ℕ) → n * 1 ≡ n
+*-identityʳ zero    = refl
+*-identityʳ (suc n) =
+  begin
+    suc n * 1
+  ≡⟨⟩
+    suc (n * 1)
+  ≡⟨ cong suc (*-identityʳ n) ⟩
+    suc n
+  ∎
+
+*-identityˡ : (n : ℕ) → 1 * n ≡ n
+*-identityˡ n = +-identityʳ n
+
+^-distribˡ-+-* : (m n p : ℕ) → m ^ (n + p) ≡ (m ^ n) * (m ^ p)
+^-distribˡ-+-* m zero p =
+  begin
+    m ^ (zero + p)
+  ≡⟨⟩
+    m ^ p
+  ≡⟨ sym (*-identityˡ (m ^ p)) ⟩
+    1 * (m ^ p)
+  ≡⟨⟩
+    (m ^ zero) * (m ^ p)
+  ∎
+^-distribˡ-+-* m (suc n) p =
+  begin
+    m ^ (suc n + p)
+  ≡⟨⟩
+    m * m ^ (n + p)
+  ≡⟨ cong (m *_) (^-distribˡ-+-* m n p) ⟩
+    m * ((m ^ n) * (m ^ p))
+  ≡⟨ sym (*-assoc m (m ^ n) (m ^ p)) ⟩
+    (m * (m ^ n)) * (m ^ p)
+  ≡⟨⟩
+    m ^ suc n * m ^ p
+  ∎
+
+*-rearrange : ∀ (m n p q : ℕ) → (m * n) * (p * q) ≡ m * (n * p) * q
+*-rearrange m n p q rewrite sym (*-assoc (m * n) p q) | (*-assoc m n p) = refl
+-- *-rearrange m n p q rewrite *-assoc m n (p * q) | sym (*-assoc n p q) | *-assoc m (n * p) q = refl
+
+^-distribʳ-* : (m n p : ℕ) → (m * n) ^ p ≡ (m ^ p) * (n ^ p)
+^-distribʳ-* m n zero    = refl
+^-distribʳ-* m n (suc p) =
+  begin
+    (m * n) ^ suc p
+  ≡⟨⟩
+    (m * n) * (m * n) ^ p
+  ≡⟨ cong (λ k → (m * n) * k) (^-distribʳ-* m n p) ⟩
+    (m * n) * ((m ^ p) * (n ^ p))
+  ≡⟨ *-rearrange m n (m ^ p) (n ^ p) ⟩
+    m * (n * m ^ p) * n ^ p
+  ≡⟨ cong (λ k → m * k * n ^ p) (*-comm n (m ^ p))  ⟩
+    m * (m ^ p * n) * n ^ p
+  ≡⟨ sym (*-rearrange m (m ^ p) n (n ^ p)) ⟩
+    m * m ^ p * (n * n ^ p)
+  ≡⟨⟩
+    m ^ suc p * n ^ suc p
+  ∎
+
+^-*-assoc : (m n p : ℕ) → (m ^ n) ^ p ≡ m ^ (n * p)
+^-*-assoc m n zero =
+  begin
+    (m ^ n) ^ 0
+  ≡⟨⟩
+    1
+  ≡⟨⟩
+    m ^ 0
+  ≡⟨ cong (m ^_) (sym (*-zeroʳ n)) ⟩
+    m ^ (n * 0)
+  ∎
+^-*-assoc m n (suc p) =
+  begin
+    (m ^ n) ^ suc p
+  ≡⟨⟩
+    m ^ n * (m ^ n) ^ p
+  ≡⟨ cong (λ k → m ^ n * k) (^-*-assoc m n p) ⟩
+    m ^ n * m ^ (n * p)
+  ≡⟨ sym (^-distribˡ-+-* m n (n * p)) ⟩
+    m ^ (n + n * p)
+  ≡⟨ cong (m ^_) (sym (*-suc n p)) ⟩
+    m ^ (n * suc p)
+  ∎
 ```
 
 
@@ -997,6 +1166,74 @@ For each law: if it holds, prove; if not, give a counterexample.
 
 ```agda
 -- Your code goes here
+data Bin : Set where
+  ⟨⟩ : Bin
+  _O : Bin → Bin
+  _I : Bin → Bin
+
+inc : Bin → Bin
+inc ⟨⟩         = ⟨⟩ I
+inc (prefix I) = (inc prefix) O
+inc (prefix O) = prefix I
+
+to   : ℕ → Bin
+to zero = ⟨⟩
+to (suc n) = inc (to n)
+
+from : Bin → ℕ
+from ⟨⟩    = zero
+from (n O) = from n * 2
+from (n I) = from n * 2 + 1
+
+from∘inc≡suc∘from : (b : Bin) → from (inc b) ≡ suc (from b)
+from∘inc≡suc∘from ⟨⟩    = refl
+from∘inc≡suc∘from (b O) =
+  begin
+    from (inc (b O))
+  ≡⟨⟩
+    from b * 2 + 1
+  ≡⟨ +-comm (from b * 2) 1 ⟩
+    1 + from b * 2
+  ≡⟨⟩
+    suc (from b * 2)
+  ≡⟨⟩
+    suc (from (b O))
+  ∎
+from∘inc≡suc∘from (b I) =
+  begin
+    from (inc (b I))
+  ≡⟨⟩
+    from (inc b) * 2
+  ≡⟨ cong (_* 2) (from∘inc≡suc∘from b) ⟩
+    suc (from b) * 2
+  ≡⟨⟩
+    suc (suc (from b * 2))
+  ≡⟨⟩
+    suc (1 + from b * 2)
+  ≡⟨ cong suc (+-comm 1 (from b * 2)) ⟩
+    suc (from b * 2 + 1)
+  ≡⟨⟩
+    suc (from (b I))
+  ∎
+
+_ :  to (from (⟨⟩ O I O)) ≡ ⟨⟩ I O
+_ = refl
+
+-- to∘from≡id : (b : Bin) → to (from b) ≡ b
+-- to∘from≡id b = ?
+
+from∘to≡id : (n : ℕ) → from (to n) ≡ n
+from∘to≡id zero    = refl
+from∘to≡id (suc n) =
+  begin
+    from (to (suc n))
+  ≡⟨⟩
+    from (inc (to n))
+  ≡⟨ from∘inc≡suc∘from (to n) ⟩
+    suc (from (to n))
+  ≡⟨ cong suc (from∘to≡id n) ⟩
+    suc n
+  ∎
 ```
 
 
