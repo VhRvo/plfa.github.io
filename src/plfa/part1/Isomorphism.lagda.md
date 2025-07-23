@@ -123,7 +123,7 @@ actually indistinguishable. This we can do via two applications of
 extensionality:
 ```agda
 same : _+′_ ≡ _+_
-same = extensionality (λ m → extensionality (λ n → same-app m n))
+same = extensionality {ℕ} {ℕ → ℕ} {_+′_} {_+_} (λ m → extensionality {ℕ} {ℕ} {m +′_} {m +_} (λ n → same-app m n))
 ```
 We occasionally need to postulate extensionality in what follows.
 
@@ -437,15 +437,24 @@ open ≲-Reasoning
 
 Show that every isomorphism implies an embedding.
 ```agda
-postulate
-  ≃-implies-≲ : ∀ {A B : Set}
-    → A ≃ B
-      -----
-    → A ≲ B
+-- postulate
+--   ≃-implies-≲ : ∀ {A B : Set}
+--     → A ≃ B
+--       -----
+--     → A ≲ B
 ```
 
 ```agda
--- Your code goes here
+≃-implies-≲ : ∀ {A B : Set}
+  → A ≃ B
+    -----
+  → A ≲ B
+≃-implies-≲ A≃B =
+  record
+    { to      = to A≃B
+    ; from    = from A≃B
+    ; from∘to = from∘to A≃B
+    }
 ```
 
 #### Exercise `_⇔_` (practice) {#iff}
@@ -460,7 +469,35 @@ record _⇔_ (A B : Set) : Set where
 Show that equivalence is reflexive, symmetric, and transitive.
 
 ```agda
--- Your code goes here
+⇔-refl : {A : Set}
+    -----
+  → A ⇔ A
+⇔-refl =
+  record
+    { to   = λ x → x
+    ; from = λ x → x
+    }
+
+⇔-sym : {A B : Set}
+  → A ⇔ B
+    -----
+  → B ⇔ A
+⇔-sym A⇔B =
+  record
+    { to   = _⇔_.from A⇔B
+    ; from = _⇔_.to A⇔B
+    }
+
+⇔-trans : {A B C : Set}
+  → A ⇔ B
+  → B ⇔ C
+    -----
+  → A ⇔ C
+⇔-trans A⇔B B⇔C =
+  record
+    { to   = _⇔_.to B⇔C   ∘ _⇔_.to A⇔B
+    ; from = _⇔_.from A⇔B ∘ _⇔_.from B⇔C
+    }
 ```
 
 #### Exercise `Bin-embedding` (stretch) {#Bin-embedding}
@@ -480,6 +517,79 @@ which satisfy the following property:
 
 Using the above, establish that there is an embedding of `ℕ` into `Bin`.
 ```agda
+open import Data.Nat.Base using (_*_)
+
+data Bin : Set where
+  ⟨⟩ : Bin
+  _O : Bin → Bin
+  _I : Bin → Bin
+
+inc : Bin → Bin
+inc ⟨⟩         = ⟨⟩ I
+inc (prefix I) = (inc prefix) O
+inc (prefix O) = prefix I
+
+to-Bin : ℕ → Bin
+to-Bin zero = ⟨⟩
+to-Bin (suc n) = inc (to-Bin n)
+
+from-Bin : Bin → ℕ
+from-Bin ⟨⟩    = zero
+from-Bin (n O) = from-Bin n * 2
+from-Bin (n I) = from-Bin n * 2 + 1
+
+from∘inc≡suc∘from : (b : Bin) → from-Bin (inc b) ≡ suc (from-Bin b)
+from∘inc≡suc∘from ⟨⟩    = refl
+from∘inc≡suc∘from (b O) =
+  begin
+    from-Bin (inc (b O))
+  ≡⟨⟩
+    from-Bin b * 2 + 1
+  ≡⟨ +-comm (from-Bin b * 2) 1 ⟩
+    1 + from-Bin b * 2
+  ≡⟨⟩
+    suc (from-Bin b * 2)
+  ≡⟨⟩
+    suc (from-Bin (b O))
+  ∎
+from∘inc≡suc∘from (b I) =
+  begin
+    from-Bin (inc (b I))
+  ≡⟨⟩
+    from-Bin (inc b) * 2
+  ≡⟨ cong (_* 2) (from∘inc≡suc∘from b) ⟩
+    suc (from-Bin b) * 2
+  ≡⟨⟩
+    suc (suc (from-Bin b * 2))
+  ≡⟨⟩
+    suc (1 + from-Bin b * 2)
+  ≡⟨ cong suc (+-comm 1 (from-Bin b * 2)) ⟩
+    suc (from-Bin b * 2 + 1)
+  ≡⟨⟩
+    suc (from-Bin (b I))
+  ∎
+
+
+from∘to≡id : (n : ℕ) → from-Bin (to-Bin n) ≡ n
+from∘to≡id zero    = refl
+from∘to≡id (suc n) =
+  begin
+    from-Bin (to-Bin (suc n))
+  ≡⟨⟩
+    from-Bin (inc (to-Bin n))
+  ≡⟨ from∘inc≡suc∘from (to-Bin n) ⟩
+    suc (from-Bin (to-Bin n))
+  ≡⟨ cong suc (from∘to≡id n) ⟩
+    suc n
+  ∎
+
+ℕ≲Bin : ℕ ≲ Bin
+ℕ≲Bin =
+  record
+    { to   = to-Bin
+    ; from = from-Bin
+    ; from∘to = from∘to≡id
+    }
 -- Your code goes here
 ```
 

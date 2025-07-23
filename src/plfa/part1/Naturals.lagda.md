@@ -966,7 +966,7 @@ inc ⟨⟩         = ⟨⟩ I
 inc (prefix I) = (inc prefix) O
 inc (prefix O) = prefix I
 
-to   : ℕ → Bin
+to : ℕ → Bin
 to zero = ⟨⟩
 to (suc n) = inc (to n)
 
