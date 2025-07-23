@@ -409,7 +409,7 @@ module ≤-Reasoning where
 
   infix  1 begin-≤_
   infixr 2 step-≤-∣ step-≤-⟩
-  infix  3 _∎-≤
+  infix  3 _≤-∎
 
   begin-≤_ : ∀ {x y : ℕ} → x ≤ y → x ≤ y
   begin-≤ x≤y  =  x≤y
@@ -423,8 +423,8 @@ module ≤-Reasoning where
   syntax step-≤-∣ x x≤y      =  x ≤⟨⟩ x≤y
   syntax step-≤-⟩ x y≤z x≤y  =  x ≤⟨  x≤y ⟩ y≤z
 
-  _∎-≤ : ∀ (x : ℕ) → x ≤ x
-  x ∎-≤  =  ≤-refl
+  _≤-∎ : ∀ (x : ℕ) → x ≤ x
+  x ≤-∎  =  ≤-refl
 
 open ≤-Reasoning
 
@@ -442,7 +442,7 @@ open ≤-Reasoning
     suc (n + q)
   ≤⟨⟩
     suc n + q
-  ∎-≤
+  ≤-∎
 
 +-monoˡ-≤ : ∀ (m n p : ℕ)
   → m ≤ n
@@ -457,7 +457,7 @@ open ≤-Reasoning
     p + n
   ≤⟨ subst (p + n ≤_) (+-comm p n) ≤-refl ⟩
     n + p
-  ∎-≤
+  ≤-∎
 
 +-mono-≤ : ∀ (m n p q : ℕ)
   → m ≤ n
@@ -471,7 +471,7 @@ open ≤-Reasoning
     m + q
   ≤⟨ +-monoˡ-≤ m n q m≤n ⟩
     n + q
-  ∎-≤
+  ≤-∎
 ```
 
 
