@@ -290,7 +290,7 @@ definition for `trans`. Can you see why? (Hint: look at the definition
 of `_≡⟨_⟩_`)
 
 ```agda
--- Your code goes here
+-- Cyclic definition?
 ```
 
 ## Chains of equations, another example
@@ -378,7 +378,27 @@ it to write out an alternative proof that addition is monotonic with
 regard to inequality.  Rewrite all of `+-monoˡ-≤`, `+-monoʳ-≤`, and `+-mono-≤`.
 
 ```agda
--- Your code goes here
+-- module ≤-Reasoning where
+
+--   infix  1 begin_
+--   infixr 2 step-≤-∣ step-≤-⟩
+--   infix  3 _∎
+
+--   begin_ : ∀ {x y : ℕ} → x ≤ y → x ≤ y
+--   begin x≤y  =  x≤y
+
+--   step-≤-∣ : ∀ (x : ℕ) {y : ℕ} → x ≤ y → x ≤ y
+--   step-≤-∣ x x≤y  =  x≤y
+
+--   step-≤-⟩ : ∀ (x : ℕ) {y z : ℕ} → y ≤ z → x ≤ y → x ≤ z
+--   step-≤-⟩ x y≤z x≤y  =  trℕns x≤y y≤z
+
+--   syntℕx step-≤-∣ x x≤y      =  x ≤⟨⟩ x≤y
+--   syntℕx step-≤-⟩ x y≤z x≤y  =  x ≤⟨  x≤y ⟩ y≤z
+
+--   _∎ : ∀ (x : ℕ) → x ≤ x
+--   x ∎  =  refl
+
 ```
 
 

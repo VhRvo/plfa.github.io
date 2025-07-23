@@ -1165,7 +1165,6 @@ over bitstrings:
 For each law: if it holds, prove; if not, give a counterexample.
 
 ```agda
--- Your code goes here
 data Bin : Set where
   ⟨⟩ : Bin
   _O : Bin → Bin

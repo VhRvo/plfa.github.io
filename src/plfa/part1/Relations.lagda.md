@@ -16,7 +16,7 @@ the next step is to define relations, such as _less than or equal_.
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; refl; cong)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_)
-open import Data.Nat.Properties using (+-comm; +-identityʳ; *-comm)
+open import Data.Nat.Properties using (+-comm; +-identityʳ; *-comm; +-suc)
 ```
 
 
@@ -243,13 +243,13 @@ partial order but not a total order.
 Give an example of a preorder that is not a partial order.
 
 ```agda
--- Your code goes here
+-- Category.
 ```
 
 Give an example of a partial order that is not a total order.
 
 ```agda
--- Your code goes here
+-- Division relation and subset relation.
 ```
 
 ## Reflexivity
@@ -362,7 +362,6 @@ The above proof omits cases where one argument is `z≤n` and one
 argument is `s≤s`.  Why is it ok to omit them?
 
 ```agda
--- Your code goes here
 ```
 
 
@@ -552,7 +551,25 @@ transitivity proves `m + p ≤ n + q`, as was to be shown.
 Show that multiplication is monotonic with regard to inequality.
 
 ```agda
--- Your code goes here
+*-monoʳ-≤ : ∀ (n p q : ℕ)
+  → p ≤ q
+    -------------
+  → n * p ≤ n * q
+*-monoʳ-≤ zero    _ _ _    =  z≤n
+*-monoʳ-≤ (suc n) p q p≤q  =  +-mono-≤ p q (n * p) (n * q) p≤q (*-monoʳ-≤ n p q p≤q)
+
+*-monoˡ-≤ : ∀ (m n p : ℕ)
+  → m ≤ n
+    -------------
+  → m * p ≤ n * p
+*-monoˡ-≤ m n p m≤n rewrite *-comm m p | *-comm n p  =  *-monoʳ-≤ p m n m≤n
+
+*-mono-≤ : ∀ (m n p q : ℕ)
+  → m ≤ n
+  → p ≤ q
+    -------------
+  → m * p ≤ n * q
+*-mono-≤ m n p q m≤n p≤q  =  ≤-trans (*-monoʳ-≤ m p q p≤q) (*-monoˡ-≤ m n q m≤n)
 ```
 
 
@@ -600,7 +617,21 @@ Show that strict inequality is transitive. Use a direct proof. (A later
 exercise exploits the relation between < and ≤.)
 
 ```agda
--- Your code goes here
+<-trans : ∀ {m n p : ℕ}
+  → m < n
+  → n < p
+    -----
+  → m < p
+<-trans {zero}  {suc n} {suc p} z<s       (s<s _)    =  z<s
+<-trans {suc m} {suc n} {suc p} (s<s m<n) (s<s n<p)  =  s<s (<-trans m<n n<p)
+
+<-trans′ : ∀ {m n p : ℕ}
+  → m < n
+  → n < p
+    -----
+  → m < p
+<-trans′ z<s       (s<s _)    =  z<s
+<-trans′ (s<s m<n) (s<s n<p)  =  s<s (<-trans′ m<n n<p)
 ```
 
 #### Exercise `trichotomy` (practice) {#trichotomy}
@@ -618,7 +649,33 @@ similar to that used for totality.
 [negation](/Negation/).)
 
 ```agda
--- Your code goes here
+_>_ : ℕ → ℕ → Set
+m > n = n < m
+
+data Trichotomy (m n : ℕ) : Set where
+  forward :
+      m < n
+      ---------
+    → Trichotomy m n
+
+  equal :
+      m ≡ n
+      ---------
+    → Trichotomy m n
+
+  flipped :
+      m > n
+      ---------
+    → Trichotomy m n
+
+<-trichotomy : ∀ (m n : ℕ) → Trichotomy m n
+<-trichotomy zero zero = equal refl
+<-trichotomy zero (suc n) = forward z<s
+<-trichotomy (suc m) zero = flipped z<s
+<-trichotomy (suc m) (suc n) with <-trichotomy m n
+...                             | forward m<n  =  forward (s<s m<n)
+...                             | equal   m≡n  =  equal (cong suc m≡n)
+...                             | flipped m>n  =  flipped (s<s m>n)
 ```
 
 #### Exercise `+-mono-<` (practice) {#plus-mono-less}
@@ -627,7 +684,25 @@ Show that addition is monotonic with respect to strict inequality.
 As with inequality, some additional definitions may be required.
 
 ```agda
--- Your code goes here
++-monoʳ-< : ∀ (n p q : ℕ)
+  → p < q
+    -------------
+  → n + p < n + q
++-monoʳ-< zero    p q p<q  =  p<q
++-monoʳ-< (suc n) p q p<q  =  s<s (+-monoʳ-< n p q p<q)
+
++-monoˡ-< : ∀ (m n p : ℕ)
+  → m < n
+    -------------
+  → m + p < n + p
++-monoˡ-< m n p m<n  rewrite +-comm m p | +-comm n p  =  +-monoʳ-< p m n m<n
+
++-mono-< : ∀ (m n p q : ℕ)
+  → m < n
+  → p < q
+    -------------
+  → m + p < n + q
++-mono-< m n p q m<n p<q  =  <-trans (+-monoʳ-< m p q p<q) (+-monoˡ-< m n q m<n)
 ```
 
 #### Exercise `≤→<, <→≤` (recommended) {#leq-iff-less}
@@ -635,7 +710,13 @@ As with inequality, some additional definitions may be required.
 Show that `suc m ≤ n` implies `m < n`, and conversely.
 
 ```agda
--- Your code goes here
+≤→< : (m n : ℕ) → suc m ≤ n → m < n
+≤→< zero    (suc n) (s≤s m≤n)  =  z<s
+≤→< (suc m) (suc n) (s≤s m≤n)  =  s<s (≤→< m n m≤n)
+
+<→≤ : (m n : ℕ) → m < n → suc m ≤ n
+<→≤ zero    (suc n) z<s        =  s≤s z≤n
+<→≤ (suc m) (suc n) (s<s m<n)  =  s≤s (<→≤ m n m<n)
 ```
 
 #### Exercise `<-trans-revisited` (practice) {#less-trans-revisited}
@@ -645,7 +726,17 @@ using the relation between strict inequality and inequality and
 the fact that inequality is transitive.
 
 ```agda
--- Your code goes here
+n≤1+n : (n : ℕ) → n ≤ 1 + n
+n≤1+n zero = z≤n
+n≤1+n (suc n) = s≤s (n≤1+n n)
+
+<-trans-revisited : ∀ {m n p : ℕ}
+  → m < n
+  → n < p
+    -----
+  → m < p
+<-trans-revisited {m} {n} {p} m<n n<p  =
+  ≤→< m p (≤-trans (<→≤ m n m<n) (≤-trans (n≤1+n n) (<→≤ n p n<p)))
 ```
 
 
@@ -752,7 +843,22 @@ successor of the sum of two even numbers, which is even.
 Show that the sum of two odd numbers is even.
 
 ```agda
--- Your code goes here
+o+o≡e : ∀ {m n : ℕ}
+  → odd m
+  → odd n
+    -----------
+  → even (m + n)
+
+e+o≡o : {m n : ℕ}
+  → even m
+  → odd n
+    -----------
+  → odd (m + n)
+
+o+o≡e (suc em) on = suc (e+o≡o em on)
+
+e+o≡o zero on = on
+e+o≡o (suc om) on = suc (o+o≡e om on)
 ```
 
 #### Exercise `Bin-predicates` (stretch) {#Bin-predicates}
@@ -812,7 +918,159 @@ properties of `One`. It may also help to prove the following:
     to (2 * n) ≡ (to n) O
 
 ```agda
--- Your code goes here
+import Relation.Binary.PropositionalEquality as Eq
+open Eq using (_≡_; refl; cong; sym)
+open Eq.≡-Reasoning using (begin_; step-≡-∣; step-≡-⟩; _∎)
+
+data Bin : Set where
+  ⟨⟩ : Bin
+  _O : Bin → Bin
+  _I : Bin → Bin
+
+data Can : Bin → Set
+data One : Bin → Set
+
+data Can where
+  zero : Can ⟨⟩
+  ones  : {b : Bin} → One b → Can b
+
+data One where
+  one : One (⟨⟩ I)
+  _I : {b : Bin} → One b → One (b I)
+  _O : {b : Bin} → One b → One (b O)
+
+inc : Bin → Bin
+inc ⟨⟩         = ⟨⟩ I
+inc (prefix I) = (inc prefix) O
+inc (prefix O) = prefix I
+
+to   : ℕ → Bin
+to zero = ⟨⟩
+to (suc n) = inc (to n)
+
+from : Bin → ℕ
+from ⟨⟩    = zero
+from (n O) = from n * 2
+from (n I) = from n * 2 + 1
+
+one→1≤from : (b : Bin)
+  → One b
+    ----------
+  → 1 ≤ from b
+one→1≤from (⟨⟩ I) one  =  s≤s z≤n
+one→1≤from (b I) (one-b I) rewrite +-comm (from b * 2) 1  =  s≤s z≤n
+one→1≤from (b O) (one-b O)  =
+  1≤m→1≤n→1≤m*n (from b) 2 (one→1≤from b one-b) (s≤s z≤n)
+  where
+    1≤m→1≤n→1≤m*n : (m n : ℕ)
+      → 1 ≤ m
+      → 1 ≤ n
+        ---------
+      → 1 ≤ m * n
+    1≤m→1≤n→1≤m*n m n 1≤m 1≤n = *-mono-≤ 1 m 1 n 1≤m 1≤n
+
+to∘2*≡O∘to : (n : ℕ)
+  → 1 ≤ n
+    ---------------------
+  → to (2 * n) ≡ (to n) O
+to∘2*≡O∘to (suc n) (s≤s 0≤n)  rewrite +-identityʳ n | +-suc n n  =  helper n
+  where
+    helper : (n : ℕ) → inc (to (suc (n + n))) ≡ (inc (to n) O)
+    helper zero  =  refl
+    helper (suc n) rewrite +-suc n n | helper n  =  refl
+
+inc-preserves-one : (b : Bin)
+  → One b
+    ------------
+  → One (inc b)
+inc-preserves-one (⟨⟩ I) one = one O
+inc-preserves-one (b O) (One₁ O) = One₁ I
+inc-preserves-one (b I) (One₁ I) = (inc-preserves-one b One₁) O
+
+inc-preserves-can : (b : Bin)
+  → Can b
+    ------------
+  → Can (inc b)
+inc-preserves-can ⟨⟩    zero          =  ones one
+inc-preserves-can (b O) (ones (x O))  =  ones (x I)
+inc-preserves-can (b I) (ones One)    =  ones (inc-preserves-one (b I) One)
+
+can-to : (n : ℕ)
+    ----------
+  → Can (to n)
+can-to zero     =  zero
+can-to (suc n)  =  inc-preserves-can (to n) (can-to n)
+
+from∘inc≡suc∘from : (b : Bin) → from (inc b) ≡ suc (from b)
+from∘inc≡suc∘from ⟨⟩    = refl
+from∘inc≡suc∘from (b O) =
+  begin
+    from (inc (b O))
+  ≡⟨⟩
+    from b * 2 + 1
+  ≡⟨ +-comm (from b * 2) 1 ⟩
+    1 + from b * 2
+  ≡⟨⟩
+    suc (from b * 2)
+  ≡⟨⟩
+    suc (from (b O))
+  ∎
+from∘inc≡suc∘from (b I) =
+  begin
+    from (inc (b I))
+  ≡⟨⟩
+    from (inc b) * 2
+  ≡⟨ cong (_* 2) (from∘inc≡suc∘from b) ⟩
+    suc (from b) * 2
+  ≡⟨⟩
+    suc (suc (from b * 2))
+  ≡⟨⟩
+    suc (1 + from b * 2)
+  ≡⟨ cong suc (+-comm 1 (from b * 2)) ⟩
+    suc (from b * 2 + 1)
+  ≡⟨⟩
+    suc (from (b I))
+  ∎
+
+_ :  to (from (⟨⟩ O I O)) ≡ ⟨⟩ I O
+_ = refl
+
+
+to∘from≡id : (b : Bin)
+  → Can b
+    ---------------
+  → to (from b) ≡ b
+
+to∘*2∘from≡O : (b : Bin) → One b → (to (from b * 2)) ≡ b O
+
+to∘from≡id ⟨⟩ zero     =  refl
+to∘from≡id b (ones x)  =  helper b x
+  where
+    helper : (b : Bin) → One b → to (from b) ≡ b
+    helper (⟨⟩ I) one = refl
+    helper (b I) (One₁ I)
+      rewrite +-comm (from b * 2) 1
+            | to∘*2∘from≡O b One₁ = refl
+    helper (b O) (One₁ O)
+      rewrite to∘*2∘from≡O b One₁ = refl
+
+to∘*2∘from≡O b One
+  rewrite *-comm (from b) 2
+        | to∘2*≡O∘to (from b) (one→1≤from b One)
+        | to∘from≡id b (ones One)  =  refl
+
+from∘to≡id : (n : ℕ) → from (to n) ≡ n
+from∘to≡id zero    = refl
+from∘to≡id (suc n) =
+  begin
+    from (to (suc n))
+  ≡⟨⟩
+    from (inc (to n))
+  ≡⟨ from∘inc≡suc∘from (to n) ⟩
+    suc (from (to n))
+  ≡⟨ cong suc (from∘to≡id n) ⟩
+    suc n
+  ∎
 ```
 
 ## Standard library
