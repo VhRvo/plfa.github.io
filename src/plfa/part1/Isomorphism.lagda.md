@@ -451,7 +451,7 @@ Show that every isomorphism implies an embedding.
   → A ≲ B
 ≃-implies-≲ A≃B =
   record
-    { to      = to A≃B
+    { to      = to   A≃B
     ; from    = from A≃B
     ; from∘to = from∘to A≃B
     }
@@ -485,7 +485,7 @@ Show that equivalence is reflexive, symmetric, and transitive.
 ⇔-sym A⇔B =
   record
     { to   = _⇔_.from A⇔B
-    ; from = _⇔_.to A⇔B
+    ; from = _⇔_.to   A⇔B
     }
 
 ⇔-trans : {A B C : Set}
@@ -495,7 +495,7 @@ Show that equivalence is reflexive, symmetric, and transitive.
   → A ⇔ C
 ⇔-trans A⇔B B⇔C =
   record
-    { to   = _⇔_.to B⇔C   ∘ _⇔_.to A⇔B
+    { to   = _⇔_.to   B⇔C ∘ _⇔_.to   A⇔B
     ; from = _⇔_.from A⇔B ∘ _⇔_.from B⇔C
     }
 ```
@@ -590,7 +590,6 @@ from∘to≡id (suc n) =
     ; from = from-Bin
     ; from∘to = from∘to≡id
     }
--- Your code goes here
 ```
 
 Why do `to` and `from` not form an isomorphism?
