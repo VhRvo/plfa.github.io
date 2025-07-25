@@ -191,7 +191,10 @@ Using negation, show that
 is irreflexive, that is, `n < n` holds for no `n`.
 
 ```agda
--- Your code goes here
+open import plfa.part1.Relations
+
+<-irreflexive : {n : ℕ} → ¬ (n < n)
+<-irreflexive {suc n} (s<s n<n)  =  <-irreflexive n<n
 ```
 
 
@@ -209,7 +212,23 @@ Here "exactly one" means that not only one of the three must hold,
 but that when one holds the negation of the other two must also hold.
 
 ```agda
--- Your code goes here
+≮→≡⊎> : (m n : ℕ) → ¬ m < n → m ≡ n ⊎ m > n
+≮→≡⊎> m n m≮n with <-trichotomy m n
+...              | forward m<n  =  contradiction m<n m≮n
+...              | equal   m≡n  =  inj₁ m≡n
+...              | flipped m>n  =  inj₂ m>n
+
+≢→<⊎> : (m n : ℕ) → ¬ m ≡ n → m < n ⊎ m > n
+≢→<⊎> m n m≢n with <-trichotomy m n
+...              | forward m<n  =  inj₁ m<n
+...              | equal   m≡n  =  contradiction m≡n m≢n
+...              | flipped m>n  =  inj₂ m>n
+
+≯→<⊎≡ : (m n : ℕ) → ¬ m > n → m < n ⊎ m ≡ n
+≯→<⊎≡ m n m≯n with <-trichotomy m n
+...              | forward m<n  =  inj₁ m<n
+...              | equal   m≡n  =  inj₂ m≡n
+...              | flipped m>n  =  contradiction m>n m≯n
 ```
 
 #### Exercise `⊎-dual-×` (recommended)
@@ -222,13 +241,31 @@ version of De Morgan's Law.
 This result is an easy consequence of something we've proved previously.
 
 ```agda
--- Your code goes here
+open import Data.Sum using ([_,_])
+
+⊎-dual-× : {A B : Set} → ¬ (A ⊎ B) ≃ (¬ A) × (¬ B)
+⊎-dual-× =
+  record
+    { to      = λ{ ¬a⊎b → ⟨ (λ a → ¬a⊎b (inj₁ a)) , (λ b → ¬a⊎b (inj₂ b)) ⟩ }
+    ; from    = λ{ ⟨ ¬a , ¬b ⟩ a⊎b → [ ¬a , ¬b ] a⊎b }
+    ; from∘to = λ{ ¬a⊎b → refl }
+    ; to∘from = λ{ ¬a×¬b → refl }
+    }
 ```
 
 
 Do we also have the following?
 
     ¬ (A × B) ≃ (¬ A) ⊎ (¬ B)
+
+```agda
+open import plfa.part1.Isomorphism using (_≲_)
+
+×-weak-⊎ : {A B : Set} → (¬ A) ⊎ (¬ B) → ¬ (A × B)
+×-weak-⊎ (inj₁ ¬a) ⟨ a , _ ⟩  =  ¬a a
+×-weak-⊎ (inj₂ ¬b) ⟨ _ , b ⟩  =  ¬b b
+```
+
 
 If so, prove; if not, can you give a relation weaker than
 isomorphism that relates the two sides?
@@ -281,8 +318,8 @@ _Communications of the ACM_, December 2015.)
 
 The law of the excluded middle can be formulated as follows:
 ```agda
-postulate
-  em : ∀ {A : Set} → A ⊎ ¬ A
+-- postulate
+--   em : ∀ {A : Set} → A ⊎ ¬ A
 ```
 As we noted, the law of the excluded middle does not hold in
 intuitionistic logic.  However, we can show that it is _irrefutable_,
@@ -379,7 +416,133 @@ Consider the following principles:
 Show that each of these implies all the others.
 
 ```agda
--- Your code goes here
+em-def : Set₁
+em-def = (A : Set) → A ⊎ ¬ A
+
+de-def : Set₁
+de-def = (A : Set) → ¬ ¬ A → A
+
+Peirce-def : Set₁
+Peirce-def = (A B : Set) → ((A → B) → A) → A
+
+→-implies-⊎-def : Set₁
+→-implies-⊎-def =  (A B : Set) → (A → B) → ¬ A ⊎ B
+
+DeMorgan-def : Set₁
+DeMorgan-def =  (A B : Set) → ¬ (¬ A × ¬ B) → A ⊎ B
+
+from-peirce : ((A B : Set) → ((A → B) → A) → A) → ((A : Set) → ((A → ⊥) → A) → A)
+from-peirce peirce A f  =  peirce A ⊥ f
+
+to-peirce :  ((A : Set) → ((A → ⊥) → A) → A) → ((A B : Set) → ((A → B) → A) → A)
+to-peirce peirce′ A B f  =  peirce′ A (λ ¬a → f (λ a → contradiction a ¬a))
+
+module em (em : ((A : Set) → A ⊎ ¬ A)) where
+
+  de : (A : Set) → ¬ ¬ A → A
+  de A ¬¬a  with em A
+  ...          | inj₁  a  =  a
+  ...          | inj₂ ¬a  =  contradiction ¬a ¬¬a
+
+  peirce : (A B : Set) → ((A → B) → A) → A
+  peirce A B f  with em A
+  ...              | inj₁  a  =  a
+  ...              | inj₂ ¬a  =  f (λ a → contradiction a ¬a)
+
+  →-implies-⊎ : (A B : Set) → (A → B) → ¬ A ⊎ B
+  →-implies-⊎ A B f  with em A
+  ...                   | inj₁  a  =  inj₂ (f a)
+  ...                   | inj₂ ¬a  =  inj₁ ¬a
+
+  DeMorgan : (A B : Set) → ¬ (¬ A × ¬ B) → A ⊎ B
+  DeMorgan A B f  with em A
+  ...                | inj₁  a  =  inj₁ a
+  ...                | inj₂ ¬a  with em B
+  ...                              | inj₁  b  =  inj₂ b
+  ...                              | inj₂ ¬b  =  contradiction ⟨ ¬a , ¬b ⟩ f
+
+  DeMorgan′ : (A B : Set) → ¬ (¬ A × ¬ B) → A ⊎ B
+  DeMorgan′ A B f  with em A    | em B
+  ...                 | inj₁ a  | _        =  inj₁ a
+  ...                 | inj₂ ¬a | inj₁  b  =  inj₂ b
+  ...                 | inj₂ ¬a | inj₂ ¬b  =  contradiction ⟨ ¬a , ¬b ⟩ f
+
+module de (de : (A : Set) → ¬ ¬ A → A) where
+
+  em : (A : Set) → A ⊎ ¬ A
+  em A  =  de (A ⊎ ¬ A) em-irrefutable
+
+  peirce : (A B : Set) → ((A → B) → A) → A
+  peirce A B f  =  de A (λ ¬a → ¬a (f (λ a → contradiction a ¬a)))
+
+  →-implies-⊎ : (A B : Set) → (A → B) → ¬ A ⊎ B
+  →-implies-⊎ A B f  =  de (¬ A ⊎ B) (λ g → g (inj₁ (λ a → g (inj₂ (f a)))))
+
+  DeMorgan : (A B : Set) → ¬ (¬ A × ¬ B) → A ⊎ B
+  DeMorgan A B f  =  de (A ⊎ B) (λ ¬A⊎B → f ⟨ (λ a → ¬A⊎B (inj₁ a)) , (λ b → ¬A⊎B (inj₂ b)) ⟩)
+
+module Peirce (Peirce : (A B : Set) → ((A → B) → A) → A) where
+
+  em : (A : Set) → A ⊎ ¬ A
+  em A  =  Peirce (A ⊎ ¬ A) ⊥ (λ ¬em → contradiction ¬em em-irrefutable)
+
+  de : (A : Set) → ¬ ¬ A → A
+  de A ¬¬a  =  Peirce A ⊥ (λ ¬a → contradiction ¬a ¬¬a)
+
+  →-implies-⊎ : (A B : Set) → (A → B) → ¬ A ⊎ B
+  →-implies-⊎ A B f  with Peirce (¬ A ⊎ A) ⊥ (λ g → inj₁ (λ a → g (inj₂ a)))
+  ...                   | inj₁ ¬a  =  inj₁ ¬a
+  ...                   | inj₂  a  =  inj₂ (f a)
+
+  DeMorgan : (A B : Set) → ¬ (¬ A × ¬ B) → A ⊎ B
+  DeMorgan A B f  =  Peirce (A ⊎ B) ⊥ (λ g → contradiction ⟨ (λ a → g (inj₁ a)) , (λ b → g (inj₂ b)) ⟩ f)
+
+module →-implies-⊎ (→-implies-⊎ : (A B : Set) → (A → B) → ¬ A ⊎ B) where
+
+  identity : {A : Set} → A → A
+  identity x = x
+
+  em : (A : Set) → A ⊎ ¬ A
+  em A  with →-implies-⊎ A A identity
+  ...      | inj₁ ¬a  =  inj₂ ¬a
+  ...      | inj₂  a  =  inj₁  a
+
+  de : (A : Set) → ¬ ¬ A → A
+  de A ¬¬a  with →-implies-⊎ A A identity
+  ...          | inj₁ ¬a  =  contradiction ¬a ¬¬a
+  ...          | inj₂  a  =  a
+
+  peirce : (A B : Set) → ((A → B) → A) → A
+  peirce A B f  with →-implies-⊎ A A identity
+  ...              | inj₁ ¬a  =  f (λ a → contradiction a ¬a )
+  ...              | inj₂  a  =  a
+
+  DeMorgan : (A B : Set) → ¬ (¬ A × ¬ B) → A ⊎ B
+  DeMorgan A B f  with →-implies-⊎ A A identity
+  ...                | inj₁ ¬a  with →-implies-⊎ B B identity
+  ...                              | inj₁ ¬b  =  contradiction ⟨ ¬a , ¬b ⟩ f
+  ...                              | inj₂  b  =  inj₂ b
+  DeMorgan A B f     | inj₂  a  =  inj₁ a
+
+module DeMorgan (DeMorgan : (A B : Set) → ¬ (¬ A × ¬ B) → A ⊎ B) where
+
+  em : (A : Set) → A ⊎ ¬ A
+  em A  =  DeMorgan A (¬ A) (λ{ ⟨ ¬a , ¬¬a ⟩ → ¬¬a ¬a })
+
+  de : (A : Set) → ¬ ¬ A → A
+  de A ¬¬a  with DeMorgan A A (λ{ ⟨ ¬a , _ ⟩ → ¬¬a ¬a })
+  ...          | inj₁ a  =  a
+  ...          | inj₂ a  =  a
+
+  peirce : (A B : Set) → ((A → B) → A) → A
+  peirce A B f  with DeMorgan A (¬ A) (λ{ ⟨ ¬a , ¬¬a ⟩ → ¬¬a ¬a })
+  ...              | inj₁  a  =  a
+  ...              | inj₂ ¬a  =  f (λ a → contradiction a ¬a)
+
+  →-implies-⊎ : (A B : Set) → (A → B) → ¬ A ⊎ B
+  →-implies-⊎ A B f  with DeMorgan A (¬ A) (λ{ ⟨ ¬a , ¬¬a ⟩ → ¬¬a ¬a })
+  ...                   | inj₁  a  =  inj₂ (f a)
+  ...                   | inj₂ ¬a  =  inj₁ ¬a
 ```
 
 
@@ -394,7 +557,8 @@ Show that any negated formula is stable, and that the conjunction
 of two stable formulas is stable.
 
 ```agda
--- Your code goes here
+¬-Stable : {A : Set} → Stable (¬ A)
+¬-Stable ¬¬¬x x = ¬¬¬x (λ ¬x → ¬x x)
 ```
 
 ## Standard library
