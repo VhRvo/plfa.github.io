@@ -918,160 +918,157 @@ properties of `One`. It may also help to prove the following:
     to (2 * n) ≡ (to n) O
 
 ```agda
-import Relation.Binary.PropositionalEquality as Eq
-open Eq using (_≡_; refl; cong; sym)
-open Eq.≡-Reasoning using (begin_; step-≡-∣; step-≡-⟩; _∎)
-open import Data.Nat.Properties using (+-suc)
+module Bin where
+  import Relation.Binary.PropositionalEquality as Eq
+  open Eq using (_≡_; refl; cong; sym)
+  open Eq.≡-Reasoning using (begin_; step-≡-∣; step-≡-⟩; _∎)
+  open import Data.Nat.Properties using (+-suc)
 
-data Bin : Set where
-  ⟨⟩ : Bin
-  _O : Bin → Bin
-  _I : Bin → Bin
+  data Bin : Set where
+    ⟨⟩ : Bin
+    _O : Bin → Bin
+    _I : Bin → Bin
 
-data Can : Bin → Set
-data One : Bin → Set
+  data One : Bin → Set where
+    one : One (⟨⟩ I)
+    _I : {b : Bin} → One b → One (b I)
+    _O : {b : Bin} → One b → One (b O)
 
-data Can where
-  zero : Can ⟨⟩
-  ones  : {b : Bin} → One b → Can b
+  data Can : Bin → Set where
+    zero : Can ⟨⟩
+    ones  : {b : Bin} → One b → Can b
 
-data One where
-  one : One (⟨⟩ I)
-  _I : {b : Bin} → One b → One (b I)
-  _O : {b : Bin} → One b → One (b O)
+  inc : Bin → Bin
+  inc ⟨⟩         = ⟨⟩ I
+  inc (prefix I) = (inc prefix) O
+  inc (prefix O) = prefix I
 
-inc : Bin → Bin
-inc ⟨⟩         = ⟨⟩ I
-inc (prefix I) = (inc prefix) O
-inc (prefix O) = prefix I
+  to   : ℕ → Bin
+  to zero = ⟨⟩
+  to (suc n) = inc (to n)
 
-to   : ℕ → Bin
-to zero = ⟨⟩
-to (suc n) = inc (to n)
+  from : Bin → ℕ
+  from ⟨⟩    = zero
+  from (n O) = from n * 2
+  from (n I) = from n * 2 + 1
 
-from : Bin → ℕ
-from ⟨⟩    = zero
-from (n O) = from n * 2
-from (n I) = from n * 2 + 1
+  one→1≤from : (b : Bin)
+    → One b
+      ----------
+    → 1 ≤ from b
+  one→1≤from (⟨⟩ I) one  =  s≤s z≤n
+  one→1≤from (b I) (one-b I) rewrite +-comm (from b * 2) 1  =  s≤s z≤n
+  one→1≤from (b O) (one-b O)  =
+    1≤m→1≤n→1≤m*n (from b) 2 (one→1≤from b one-b) (s≤s z≤n)
+    where
+      1≤m→1≤n→1≤m*n : (m n : ℕ)
+        → 1 ≤ m
+        → 1 ≤ n
+          ---------
+        → 1 ≤ m * n
+      1≤m→1≤n→1≤m*n m n 1≤m 1≤n = *-mono-≤ 1 m 1 n 1≤m 1≤n
 
-one→1≤from : (b : Bin)
-  → One b
-    ----------
-  → 1 ≤ from b
-one→1≤from (⟨⟩ I) one  =  s≤s z≤n
-one→1≤from (b I) (one-b I) rewrite +-comm (from b * 2) 1  =  s≤s z≤n
-one→1≤from (b O) (one-b O)  =
-  1≤m→1≤n→1≤m*n (from b) 2 (one→1≤from b one-b) (s≤s z≤n)
-  where
-    1≤m→1≤n→1≤m*n : (m n : ℕ)
-      → 1 ≤ m
-      → 1 ≤ n
-        ---------
-      → 1 ≤ m * n
-    1≤m→1≤n→1≤m*n m n 1≤m 1≤n = *-mono-≤ 1 m 1 n 1≤m 1≤n
+  to∘2*≡O∘to : (n : ℕ)
+    → 1 ≤ n
+      ---------------------
+    → to (2 * n) ≡ (to n) O
+  to∘2*≡O∘to (suc n) (s≤s 0≤n)  rewrite +-identityʳ n | +-suc n n  =  helper n
+    where
+      helper : (n : ℕ) → inc (to (suc (n + n))) ≡ (inc (to n) O)
+      helper zero  =  refl
+      helper (suc n) rewrite +-suc n n | helper n  =  refl
 
-to∘2*≡O∘to : (n : ℕ)
-  → 1 ≤ n
-    ---------------------
-  → to (2 * n) ≡ (to n) O
-to∘2*≡O∘to (suc n) (s≤s 0≤n)  rewrite +-identityʳ n | +-suc n n  =  helper n
-  where
-    helper : (n : ℕ) → inc (to (suc (n + n))) ≡ (inc (to n) O)
-    helper zero  =  refl
-    helper (suc n) rewrite +-suc n n | helper n  =  refl
+  inc-preserves-one : (b : Bin)
+    → One b
+      ------------
+    → One (inc b)
+  inc-preserves-one (⟨⟩ I) one = one O
+  inc-preserves-one (b O) (One₁ O) = One₁ I
+  inc-preserves-one (b I) (One₁ I) = (inc-preserves-one b One₁) O
 
-inc-preserves-one : (b : Bin)
-  → One b
-    ------------
-  → One (inc b)
-inc-preserves-one (⟨⟩ I) one = one O
-inc-preserves-one (b O) (One₁ O) = One₁ I
-inc-preserves-one (b I) (One₁ I) = (inc-preserves-one b One₁) O
+  inc-preserves-can : (b : Bin)
+    → Can b
+      ------------
+    → Can (inc b)
+  inc-preserves-can ⟨⟩    zero          =  ones one
+  inc-preserves-can (b O) (ones (x O))  =  ones (x I)
+  inc-preserves-can (b I) (ones One)    =  ones (inc-preserves-one (b I) One)
 
-inc-preserves-can : (b : Bin)
-  → Can b
-    ------------
-  → Can (inc b)
-inc-preserves-can ⟨⟩    zero          =  ones one
-inc-preserves-can (b O) (ones (x O))  =  ones (x I)
-inc-preserves-can (b I) (ones One)    =  ones (inc-preserves-one (b I) One)
+  can-to : (n : ℕ)
+      ----------
+    → Can (to n)
+  can-to zero     =  zero
+  can-to (suc n)  =  inc-preserves-can (to n) (can-to n)
 
-can-to : (n : ℕ)
-    ----------
-  → Can (to n)
-can-to zero     =  zero
-can-to (suc n)  =  inc-preserves-can (to n) (can-to n)
+  from∘inc≡suc∘from : (b : Bin) → from (inc b) ≡ suc (from b)
+  from∘inc≡suc∘from ⟨⟩    = refl
+  from∘inc≡suc∘from (b O) =
+    begin
+      from (inc (b O))
+    ≡⟨⟩
+      from b * 2 + 1
+    ≡⟨ +-comm (from b * 2) 1 ⟩
+      1 + from b * 2
+    ≡⟨⟩
+      suc (from b * 2)
+    ≡⟨⟩
+      suc (from (b O))
+    ∎
+  from∘inc≡suc∘from (b I) =
+    begin
+      from (inc (b I))
+    ≡⟨⟩
+      from (inc b) * 2
+    ≡⟨ cong (_* 2) (from∘inc≡suc∘from b) ⟩
+      suc (from b) * 2
+    ≡⟨⟩
+      suc (suc (from b * 2))
+    ≡⟨⟩
+      suc (1 + from b * 2)
+    ≡⟨ cong suc (+-comm 1 (from b * 2)) ⟩
+      suc (from b * 2 + 1)
+    ≡⟨⟩
+      suc (from (b I))
+    ∎
 
-from∘inc≡suc∘from : (b : Bin) → from (inc b) ≡ suc (from b)
-from∘inc≡suc∘from ⟨⟩    = refl
-from∘inc≡suc∘from (b O) =
-  begin
-    from (inc (b O))
-  ≡⟨⟩
-    from b * 2 + 1
-  ≡⟨ +-comm (from b * 2) 1 ⟩
-    1 + from b * 2
-  ≡⟨⟩
-    suc (from b * 2)
-  ≡⟨⟩
-    suc (from (b O))
-  ∎
-from∘inc≡suc∘from (b I) =
-  begin
-    from (inc (b I))
-  ≡⟨⟩
-    from (inc b) * 2
-  ≡⟨ cong (_* 2) (from∘inc≡suc∘from b) ⟩
-    suc (from b) * 2
-  ≡⟨⟩
-    suc (suc (from b * 2))
-  ≡⟨⟩
-    suc (1 + from b * 2)
-  ≡⟨ cong suc (+-comm 1 (from b * 2)) ⟩
-    suc (from b * 2 + 1)
-  ≡⟨⟩
-    suc (from (b I))
-  ∎
+  _ :  to (from (⟨⟩ O I O)) ≡ ⟨⟩ I O
+  _ = refl
 
-_ :  to (from (⟨⟩ O I O)) ≡ ⟨⟩ I O
-_ = refl
+  to∘from≡id : (b : Bin)
+    → Can b
+      ---------------
+    → to (from b) ≡ b
 
+  to∘*2∘from≡O : (b : Bin) → One b → (to (from b * 2)) ≡ b O
 
-to∘from≡id : (b : Bin)
-  → Can b
-    ---------------
-  → to (from b) ≡ b
+  to∘from≡id ⟨⟩ zero     =  refl
+  to∘from≡id b (ones x)  =  helper b x
+    where
+      helper : (b : Bin) → One b → to (from b) ≡ b
+      helper (⟨⟩ I) one = refl
+      helper (b I) (One₁ I)
+        rewrite +-comm (from b * 2) 1
+              | to∘*2∘from≡O b One₁ = refl
+      helper (b O) (One₁ O)
+        rewrite to∘*2∘from≡O b One₁ = refl
 
-to∘*2∘from≡O : (b : Bin) → One b → (to (from b * 2)) ≡ b O
+  to∘*2∘from≡O b One
+    rewrite *-comm (from b) 2
+          | to∘2*≡O∘to (from b) (one→1≤from b One)
+          | to∘from≡id b (ones One)  =  refl
 
-to∘from≡id ⟨⟩ zero     =  refl
-to∘from≡id b (ones x)  =  helper b x
-  where
-    helper : (b : Bin) → One b → to (from b) ≡ b
-    helper (⟨⟩ I) one = refl
-    helper (b I) (One₁ I)
-      rewrite +-comm (from b * 2) 1
-            | to∘*2∘from≡O b One₁ = refl
-    helper (b O) (One₁ O)
-      rewrite to∘*2∘from≡O b One₁ = refl
-
-to∘*2∘from≡O b One
-  rewrite *-comm (from b) 2
-        | to∘2*≡O∘to (from b) (one→1≤from b One)
-        | to∘from≡id b (ones One)  =  refl
-
-from∘to≡id : (n : ℕ) → from (to n) ≡ n
-from∘to≡id zero    = refl
-from∘to≡id (suc n) =
-  begin
-    from (to (suc n))
-  ≡⟨⟩
-    from (inc (to n))
-  ≡⟨ from∘inc≡suc∘from (to n) ⟩
-    suc (from (to n))
-  ≡⟨ cong suc (from∘to≡id n) ⟩
-    suc n
-  ∎
+  from∘to≡id : (n : ℕ) → from (to n) ≡ n
+  from∘to≡id zero    = refl
+  from∘to≡id (suc n) =
+    begin
+      from (to (suc n))
+    ≡⟨⟩
+      from (inc (to n))
+    ≡⟨ from∘inc≡suc∘from (to n) ⟩
+      suc (from (to n))
+    ≡⟨ cong suc (from∘to≡id n) ⟩
+      suc n
+    ∎
 ```
 
 ## Standard library

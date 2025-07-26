@@ -518,76 +518,14 @@ which satisfy the following property:
 Using the above, establish that there is an embedding of `ℕ` into `Bin`.
 ```agda
 open import Data.Nat.Base using (_*_)
-
-data Bin : Set where
-  ⟨⟩ : Bin
-  _O : Bin → Bin
-  _I : Bin → Bin
-
-inc : Bin → Bin
-inc ⟨⟩         = ⟨⟩ I
-inc (prefix I) = (inc prefix) O
-inc (prefix O) = prefix I
-
-to-Bin : ℕ → Bin
-to-Bin zero = ⟨⟩
-to-Bin (suc n) = inc (to-Bin n)
-
-from-Bin : Bin → ℕ
-from-Bin ⟨⟩    = zero
-from-Bin (n O) = from-Bin n * 2
-from-Bin (n I) = from-Bin n * 2 + 1
-
-from∘inc≡suc∘from : (b : Bin) → from-Bin (inc b) ≡ suc (from-Bin b)
-from∘inc≡suc∘from ⟨⟩    = refl
-from∘inc≡suc∘from (b O) =
-  begin
-    from-Bin (inc (b O))
-  ≡⟨⟩
-    from-Bin b * 2 + 1
-  ≡⟨ +-comm (from-Bin b * 2) 1 ⟩
-    1 + from-Bin b * 2
-  ≡⟨⟩
-    suc (from-Bin b * 2)
-  ≡⟨⟩
-    suc (from-Bin (b O))
-  ∎
-from∘inc≡suc∘from (b I) =
-  begin
-    from-Bin (inc (b I))
-  ≡⟨⟩
-    from-Bin (inc b) * 2
-  ≡⟨ cong (_* 2) (from∘inc≡suc∘from b) ⟩
-    suc (from-Bin b) * 2
-  ≡⟨⟩
-    suc (suc (from-Bin b * 2))
-  ≡⟨⟩
-    suc (1 + from-Bin b * 2)
-  ≡⟨ cong suc (+-comm 1 (from-Bin b * 2)) ⟩
-    suc (from-Bin b * 2 + 1)
-  ≡⟨⟩
-    suc (from-Bin (b I))
-  ∎
-
-
-from∘to≡id : (n : ℕ) → from-Bin (to-Bin n) ≡ n
-from∘to≡id zero    = refl
-from∘to≡id (suc n) =
-  begin
-    from-Bin (to-Bin (suc n))
-  ≡⟨⟩
-    from-Bin (inc (to-Bin n))
-  ≡⟨ from∘inc≡suc∘from (to-Bin n) ⟩
-    suc (from-Bin (to-Bin n))
-  ≡⟨ cong suc (from∘to≡id n) ⟩
-    suc n
-  ∎
+import plfa.part1.Relations as Relations
+open Relations.Bin
 
 ℕ≲Bin : ℕ ≲ Bin
 ℕ≲Bin =
   record
-    { to   = to-Bin
-    ; from = from-Bin
+    { to      = Relations.Bin.to
+    ; from    = Relations.Bin.from
     ; from∘to = from∘to≡id
     }
 ```
