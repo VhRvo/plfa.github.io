@@ -438,17 +438,13 @@ open ≲-Reasoning
 Show that every isomorphism implies an embedding.
 ```agda
 -- postulate
---   ≃-implies-≲ : ∀ {A B : Set}
---     → A ≃ B
---       -----
---     → A ≲ B
-```
-
-```agda
 ≃-implies-≲ : ∀ {A B : Set}
   → A ≃ B
     -----
   → A ≲ B
+```
+
+```agda
 ≃-implies-≲ A≃B =
   record
     { to      = to   A≃B
