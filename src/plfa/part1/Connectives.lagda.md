@@ -803,7 +803,6 @@ one of these laws is "more true" than the other.
 
 Show that the following property holds:
 ```agda
--- postulate
 -- (A ⊎ B) × C ≃ A × B ⊎ B × C ≲ A ⊎ B × C
 ⊎-weak-× : ∀ {A B C : Set} → (A ⊎ B) × C → A ⊎ (B × C)
 ⊎-weak-× ⟨ inj₁ x , _ ⟩  =  inj₁ x
@@ -817,7 +816,6 @@ distributive law, and explain how it relates to the weak version.
 
 Show that a disjunct of conjuncts implies a conjunct of disjuncts:
 ```agda
--- postulate
 ⊎×-implies-×⊎ : ∀ {A B C D : Set} → (A × B) ⊎ (C × D) → (A ⊎ C) × (B ⊎ D)
 ⊎×-implies-×⊎ (inj₁ ⟨ x , y ⟩)  =  ⟨ inj₁ x , inj₁ y ⟩
 ⊎×-implies-×⊎ (inj₂ ⟨ z , w ⟩)  =  ⟨ inj₂ z , inj₂ w ⟩

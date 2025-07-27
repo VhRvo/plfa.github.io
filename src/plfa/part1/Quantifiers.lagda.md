@@ -90,7 +90,6 @@ dependent product is ambiguous.
 
 Show that universals distribute over conjunction:
 ```agda
--- postulate
 ∀-distrib-× : ∀ {A : Set} {B C : A → Set} →
   (∀ (x : A) → B x × C x) ≃ (∀ (x : A) → B x) × (∀ (x : A) → C x)
 ∀-distrib-× =
@@ -308,7 +307,6 @@ Show that existentials distribute over disjunction:
 
 Show that an existential of conjunctions implies a conjunction of existentials:
 ```agda
--- postulate
 ∃×-implies-×∃ : ∀ {A : Set} {B C : A → Set} →
   ∃[ x ] (B x × C x) → (∃[ x ] B x) × (∃[ x ] C x)
 ∃×-implies-×∃ ⟨ x , ⟨ Bx , Cx ⟩ ⟩ = ⟨ ⟨ x , Bx ⟩ , ⟨ x , Cx ⟩ ⟩
