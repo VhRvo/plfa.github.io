@@ -153,6 +153,9 @@ In the reverse direction, there is no need for a case analysis on the boolean `b
 ```agda
 ≡→T : ∀ {b : Bool} → b ≡ true → T b
 ≡→T refl  =  tt
+-- ≡→T {.true} refl  =  tt
+-- ≡→T {true} refl  =  tt
+-- ≡→T {false} ()
 ```
 If `b ≡ true` is inhabited by `refl` we know that `b` is `true` and
 hence `T b` is inhabited by `tt`.
@@ -291,24 +294,38 @@ trouble normalising evidence of negation.)
 
 Analogous to the function above, define a function to decide strict inequality:
 ```agda
-postulate
-  _<?_ : ∀ (m n : ℕ) → Dec (m < n)
-```
+¬s<z : ∀ {m : ℕ} → ¬ (suc m < zero)
+¬s<z ()
 
-```agda
--- Your code goes here
+¬s<s : ∀ {m n : ℕ} → ¬ (m < n) → ¬ (suc m < suc n)
+¬s<s ¬m<n (s<s m<n) = ¬m<n m<n
+
+_<?_ : ∀ (m n : ℕ) → Dec (m < n)
+zero  <? zero                = no (λ ())
+zero  <? suc n               = yes z<s
+suc m <? zero                = no (λ ())
+suc m <? suc n with m <? n
+...               | yes m<n  =  yes (s<s m<n)
+...               | no ¬m<n  =  no (¬s<s ¬m<n)
 ```
 
 #### Exercise `_≡ℕ?_` (practice)
 
 Define a function to decide whether two naturals are equal:
 ```agda
-postulate
-  _≡ℕ?_ : ∀ (m n : ℕ) → Dec (m ≡ n)
-```
+s≡s : ∀ {m n : ℕ} → suc m ≡ suc n → m ≡ n
+s≡s refl  =  refl
 
-```agda
--- Your code goes here
+¬s≡s : ∀ {m n : ℕ} → ¬ (m ≡ n) → ¬ (suc m ≡ suc n)
+¬s≡s ¬m≡n m≡n  =  ¬m≡n (s≡s m≡n)
+
+_≡ℕ?_ : ∀ (m n : ℕ) → Dec (m ≡ n)
+zero ≡ℕ? zero                  = yes refl
+zero ≡ℕ? suc n                 = no (λ ())
+suc m ≡ℕ? zero                 = no (λ ())
+suc m ≡ℕ? suc n with m ≡ℕ? n
+...                | yes refl  =  yes refl
+...                | no  ¬m≡n  =  no (¬s≡s ¬m≡n)
 ```
 
 
@@ -535,10 +552,21 @@ on which matches; but either is equally valid.
 
 Show that erasure relates corresponding boolean and decidable operations:
 ```agda
-postulate
-  ∧-× : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ ∧ ⌊ y ⌋ ≡ ⌊ x ×-dec y ⌋
-  ∨-⊎ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ ∨ ⌊ y ⌋ ≡ ⌊ x ⊎-dec y ⌋
-  not-¬ : ∀ {A : Set} (x : Dec A) → not ⌊ x ⌋ ≡ ⌊ ¬? x ⌋
+∧-× : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ ∧ ⌊ y ⌋ ≡ ⌊ x ×-dec y ⌋
+∧-× (yes x) (yes x₁)  =  refl
+∧-× (yes x) (no x₁)   =  refl
+∧-× (no x)  (yes x₁)  =  refl
+∧-× (no x)  (no x₁)   =  refl
+
+∨-⊎ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ ∨ ⌊ y ⌋ ≡ ⌊ x ⊎-dec y ⌋
+∨-⊎ (yes x) (yes y)  =  refl
+∨-⊎ (yes x) (no ¬y)  =  refl
+∨-⊎ (no ¬x) (yes y)  =  refl
+∨-⊎ (no ¬x) (no ¬y)  =  refl
+
+not-¬ : ∀ {A : Set} (x : Dec A) → not ⌊ x ⌋ ≡ ⌊ ¬? x ⌋
+not-¬ (yes x)  =  refl
+not-¬ (no ¬x)  =  refl
 ```
 
 #### Exercise `iff-erasure` (recommended)
@@ -547,15 +575,37 @@ Give analogues of the `_⇔_` operation from
 Chapter [Isomorphism](/Isomorphism/#iff),
 operation on booleans and decidables, and also show the corresponding erasure:
 ```agda
-postulate
-  _iff_ : Bool → Bool → Bool
-  _⇔-dec_ : ∀ {A B : Set} → Dec A → Dec B → Dec (A ⇔ B)
-  iff-⇔ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ iff ⌊ y ⌋ ≡ ⌊ x ⇔-dec y ⌋
+open import Relation.Nullary.Negation using (contradiction)
+
+_iff_ : Bool → Bool → Bool
+true  iff true   = true
+true  iff false  = false
+false iff true   = false
+false iff false  = true
+
+_⇔-dec_ : ∀ {A B : Set} → Dec A → Dec B → Dec (A ⇔ B)
+yes x ⇔-dec yes y  =
+  yes
+    (record
+      { to = λ z → y
+      ; from = λ z → x
+      })
+yes x ⇔-dec no ¬y  =  no (λ A⇔B → ¬y (_⇔_.to A⇔B x))
+no ¬x ⇔-dec yes y  =  no (λ A⇔B → ¬x (_⇔_.from A⇔B y))
+no ¬x ⇔-dec no ¬y  =
+  yes
+    (record
+      { to = λ x → contradiction x ¬x
+      ; from = λ y → contradiction y ¬y
+      })
+
+iff-⇔ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ iff ⌊ y ⌋ ≡ ⌊ x ⇔-dec y ⌋
+iff-⇔ (yes x) (yes y)  =  refl
+iff-⇔ (yes x) (no ¬y)  =  refl
+iff-⇔ (no ¬x) (yes y)  =  refl
+iff-⇔ (no ¬x) (no ¬y)  =  refl
 ```
 
-```agda
--- Your code goes here
-```
 
 ## Proof by reflection {#proof-by-reflection}
 
@@ -607,7 +657,7 @@ We obtain the witness for `n ≤ m` using `toWitness`, which we defined earlier:
 
 ```agda
 _-_ : (m n : ℕ) {n≤m : T ⌊ n ≤? m ⌋} → ℕ
-_-_ m n {n≤m} = minus m n (toWitness n≤m)
+_-_ m n {n≤m} = minus m n (toWitness {n ≤ m} {n ≤? m} n≤m)
 ```
 
 We can safely use `_-_` as long as we statically know the two numbers:
@@ -631,6 +681,18 @@ Give analogues of `True`, `toWitness`, and `fromWitness` which work
 with *negated* properties. Call these `False`, `toWitnessFalse`, and
 `fromWitnessFalse`.
 
+```agda
+False : ∀ {Q} → Dec Q → Set
+False Q = T (not ⌊ Q ⌋)
+
+toWitnessFalse : ∀ {A : Set} {D : Dec A} → False D → ¬ A
+toWitnessFalse {A} {yes x} ()
+toWitnessFalse {A} {no ¬x} tt  =  ¬x
+
+fromWitnessFalse : ∀ {A : Set} {D : Dec A} → ¬ A → False D
+fromWitnessFalse {A} {yes x} ¬x  =  ¬x x
+fromWitnessFalse {A} {no ¬x} _   =  tt
+```
 
 #### Exercise `Bin-decidable` (stretch)
 
@@ -649,6 +711,75 @@ Show that both of the above are decidable.
     One? : ∀ (b : Bin) → Dec (One b)
     Can? : ∀ (b : Bin) → Dec (Can b)
 
+```agda
+import plfa.part1.Relations as Relations
+
+module Bin where
+
+  open Relations.Bin
+
+  ¬One⟨⟩ : ¬ One ⟨⟩
+  ¬One⟨⟩ ()
+
+  One¬O : {b : Bin} → ¬ One b → ¬ (One (b O))
+  One¬O ¬One (One O)  =  ¬One One
+
+  One¬OI : {b : Bin} → ¬ One (b O) → ¬ (One ((b O) I))
+  One¬OI ¬One (One I)  =  ¬One One
+
+  -- Important: strengthen the restriction on the premise to loose the restriction on the conclusion
+  One¬II : {b : Bin} → ¬ One (b I) → ¬ (One ((b I) I))
+  One¬II ¬One (One I)  =  ¬One One
+
+  -- One¬I : {b : Bin} → ¬ One b → One (b I) ⊎ ¬ (One (b I))
+  One¬I : {b : Bin} → ¬ One b → Dec (One (b I))
+  One¬I {⟨⟩}  _     =  yes one
+  One¬I {b O} ¬One  =  no  (One¬OI ¬One)
+  One¬I {b I} ¬One  =  no  (One¬II ¬One)
+
+  Can¬O : {b : Bin} → ¬ One b → ¬ (Can (b O))
+  Can¬O ¬One (ones (One O))  =  ¬One One
+
+  Can¬OI : {b : Bin} → ¬ One (b O) → ¬ (Can ((b O) I))
+  Can¬OI ¬One (ones (One I))  =  ¬One One
+
+  Can¬II : {b : Bin} → ¬ One (b I) → ¬ (Can ((b I) I))
+  Can¬II ¬One (ones (One I))  =  ¬One One
+
+  Can¬I : {b : Bin} → ¬ One b → Can ⟨⟩ ⊎ ¬ (Can (b I))
+  Can¬I {⟨⟩}  _     =  inj₁ zero
+  Can¬I {b O} ¬One  =  inj₂ (Can¬OI ¬One)
+  Can¬I {b I} ¬One  =  inj₂ (Can¬II ¬One)
+
+  One? : ∀ (b : Bin) → Dec (One b)
+  One? ⟨⟩                =  no (λ ())
+  One? (b O) with One? b
+  ...           | yes b  =  yes (b O)
+  ...           | no ¬b  =  no  (One¬O ¬b)
+  One? (b I) with One? b
+  ...           | yes b  =  yes (b I)
+  ...           | no ¬b  =  One¬I ¬b
+  -- One? (⟨⟩ I)            =  yes one
+  -- One? ((b O) I) with One? (b O)
+  -- ...           | yes b  =  yes (b I)
+  -- ...           | no ¬b  =  no  (One¬OI ¬b)
+  -- One? ((b I) I) with One? (b I)
+  -- ...           | yes b  =  yes (b I)
+  -- ...           | no ¬b  =  no  (One¬II ¬b)
+
+  Can? : ∀ (b : Bin) → Dec (Can b)
+  Can? ⟨⟩                      =  yes zero
+  Can? (b O) with One? b
+  ...          | yes One       =  yes (ones  (One O))
+  ...          | no ¬One       =  no  (Can¬O ¬One)
+  Can? (⟨⟩ I)                  =  yes (ones one)
+  Can? ((b O) I) with One? (b O)
+  ...               | yes One  =  yes (ones (One I))
+  ...               | no ¬One  =  no  (Can¬OI ¬One)
+  Can? ((b I) I) with One? (b I)
+  ...               | yes One  =  yes (ones (One I))
+  ...               | no ¬One  =  no  (Can¬II ¬One)
+```
 
 
 ## Standard Library
