@@ -657,65 +657,68 @@ which is a corollary of `≡Can`.
 
 ```agda
 import plfa.part1.Relations as Relations
-open Relations.Bin
 
-≡One : ∀ {b : Bin} (o o′ : One b) → o ≡ o′
-≡One {b O}  (o O) (o′ O)  =  cong _O (≡One o o′)
-≡One {⟨⟩ I} one   one     =  refl
-≡One {b I}  (o I) (o′ I)  =  cong _I (≡One o o′)
+module Bin where
 
-≡Can : ∀ {b : Bin} (c c′ : Can b) → c ≡ c′
-≡Can {⟨⟩}  zero     zero       =  refl
-≡Can {b O} (ones x) (ones x₁)  =  cong ones (≡One x x₁)
-≡Can {b I} (ones x) (ones x₁)  =  cong ones (≡One x x₁)
+  open Relations.Bin
 
-ℕ≃∃Can : ℕ ≃ ∃[ b ] Can b
-ℕ≃∃Can =
-  record
-    { to      = to′
-    ; from    = from′
-    ; from∘to = λ n → from∘to n
-    ; to∘from = λ e → to∘from e
-    }
-  where
-    to′ : ℕ → ∃[ b ] Can b
-    to′ n = ⟨ to n , can-to n ⟩
+  ≡One : ∀ {b : Bin} (o o′ : One b) → o ≡ o′
+  ≡One {b O}  (o O) (o′ O)  =  cong _O (≡One o o′)
+  ≡One {⟨⟩ I} one   one     =  refl
+  ≡One {b I}  (o I) (o′ I)  =  cong _I (≡One o o′)
 
-    from′ : ∃[ b ] Can b → ℕ
-    from′ ⟨ b , _ ⟩ = from b
+  ≡Can : ∀ {b : Bin} (c c′ : Can b) → c ≡ c′
+  ≡Can {⟨⟩}  zero     zero       =  refl
+  ≡Can {b O} (ones x) (ones x₁)  =  cong ones (≡One x x₁)
+  ≡Can {b I} (ones x) (ones x₁)  =  cong ones (≡One x x₁)
 
-    from∘to : (n : ℕ) → from′ (to′ n) ≡ n
-    from∘to zero    = refl
-    from∘to (suc n) =
-      begin
-        from′ (to′ (suc n))
-      ≡⟨⟩
-        from′ ⟨ inc (to n) , inc-preserves-can (to n) (can-to n) ⟩
-      ≡⟨⟩
-        from (inc (to n))
-      ≡⟨ from∘inc≡suc∘from (to n) ⟩
-        suc (from (to n))
-      ≡⟨ cong suc (from∘to≡id n) ⟩
-        suc n
-      ∎
+  ℕ≃∃Can : ℕ ≃ ∃[ b ] Can b
+  ℕ≃∃Can =
+    record
+      { to      = to′
+      ; from    = from′
+      ; from∘to = λ n → from∘to n
+      ; to∘from = λ e → to∘from e
+      }
+    where
+      to′ : ℕ → ∃[ b ] Can b
+      to′ n = ⟨ to n , can-to n ⟩
 
-    proj₁≡×unique→Σ≡ : {A : Set} {B : A → Set} → {ex ex′ : Σ A B} → Σ.proj₁ ex ≡ Σ.proj₁ ex′ → ({a : A} → (b b′ : B a) → b ≡ b′) → ex ≡ ex′
-    proj₁≡×unique→Σ≡ {_} {_} {⟨ a , b ⟩} {⟨ .a , b′ ⟩} refl unique  =  (cong ⟨ a ,_⟩) (unique b b′)
+      from′ : ∃[ b ] Can b → ℕ
+      from′ ⟨ b , _ ⟩ = from b
 
-    proj₁≡→Can≡ : {c c′ : ∃[ b ] Can b} → Σ.proj₁ c ≡ Σ.proj₁ c′ → c ≡ c′
-    proj₁≡→Can≡ eq = proj₁≡×unique→Σ≡ eq ≡Can
+      from∘to : (n : ℕ) → from′ (to′ n) ≡ n
+      from∘to zero    = refl
+      from∘to (suc n) =
+        begin
+          from′ (to′ (suc n))
+        ≡⟨⟩
+          from′ ⟨ inc (to n) , inc-preserves-can (to n) (can-to n) ⟩
+        ≡⟨⟩
+          from (inc (to n))
+        ≡⟨ from∘inc≡suc∘from (to n) ⟩
+          suc (from (to n))
+        ≡⟨ cong suc (from∘to≡id n) ⟩
+          suc n
+        ∎
 
-    to∘from : (b : ∃[ b ] Can b) → to′ (from′ b) ≡ b
-    to∘from ⟨ b , c ⟩ =
-      begin
-        to′ (from′ ⟨ b , c ⟩)
-      ≡⟨⟩
-        to′ (from b)
-      ≡⟨⟩
-        ⟨ to (from b) , can-to (from b) ⟩
-      ≡⟨ proj₁≡→Can≡ (to∘from≡id b c) ⟩
-        ⟨ b , c ⟩
-      ∎
+      proj₁≡×unique→Σ≡ : {A : Set} {B : A → Set} → {ex ex′ : Σ A B} → Σ.proj₁ ex ≡ Σ.proj₁ ex′ → ({a : A} → (b b′ : B a) → b ≡ b′) → ex ≡ ex′
+      proj₁≡×unique→Σ≡ {_} {_} {⟨ a , b ⟩} {⟨ .a , b′ ⟩} refl unique  =  (cong ⟨ a ,_⟩) (unique b b′)
+
+      proj₁≡→Can≡ : {c c′ : ∃[ b ] Can b} → Σ.proj₁ c ≡ Σ.proj₁ c′ → c ≡ c′
+      proj₁≡→Can≡ eq = proj₁≡×unique→Σ≡ eq ≡Can
+
+      to∘from : (b : ∃[ b ] Can b) → to′ (from′ b) ≡ b
+      to∘from ⟨ b , c ⟩ =
+        begin
+          to′ (from′ ⟨ b , c ⟩)
+        ≡⟨⟩
+          to′ (from b)
+        ≡⟨⟩
+          ⟨ to (from b) , can-to (from b) ⟩
+        ≡⟨ proj₁≡→Can≡ (to∘from≡id b c) ⟩
+          ⟨ b , c ⟩
+        ∎
 ```
 
 
