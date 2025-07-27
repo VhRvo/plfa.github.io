@@ -355,7 +355,11 @@ reverse of the second appended to the reverse of the first:
     reverse (xs ++ ys) ≡ reverse ys ++ reverse xs
 
 ```agda
--- Your code goes here
+reverse-++-distrib :
+    {A : Set}
+  → (xs ys : List A)
+  → reverse (xs ++ ys) ≡ reverse ys ++ reverse xs
+reverse-++-distrib xs ys = {!   !}
 ```
 
 
@@ -367,7 +371,8 @@ as the identity function.  Show that reverse is an involution:
     reverse (reverse xs) ≡ xs
 
 ```agda
--- Your code goes here
+reverse-involutive : {A : Set} → (xs : List A) → reverse (reverse xs) ≡ xs
+reverse-involutive xs = {!   !}
 ```
 
 
@@ -537,7 +542,11 @@ Prove that the map of a composition is equal to the composition of two maps:
 The last step of the proof requires extensionality.
 
 ```agda
--- Your code goes here
+map-compose :
+    {A B C : Set}
+  → (g : B → C) → (f : A → B)
+  → map (g ∘ f) ≡ map g ∘ map f
+map-compose g f = {!   !}
 ```
 
 #### Exercise `map-++-distribute` (practice)
@@ -547,7 +556,11 @@ Prove the following relationship between map and append:
     map f (xs ++ ys) ≡ map f xs ++ map f ys
 
 ```agda
--- Your code goes here
+map-++-distribute :
+    {A B : Set} → (f : A → B)
+  → (xs ys : List A)
+  → map f (xs ++ ys) ≡ map f xs ++ map f ys
+map-++-distribute f xs ys = {!   !}
 ```
 
 #### Exercise `map-Tree` (practice)
@@ -564,7 +577,8 @@ Define a suitable map operator over trees:
     map-Tree : ∀ {A B C D : Set} → (A → C) → (B → D) → Tree A B → Tree C D
 
 ```agda
--- Your code goes here
+map-Tree : ∀ {A B C D : Set} → (A → C) → (B → D) → Tree A B → Tree C D
+map-Tree f g tree = {!   !}
 ```
 
 ## Fold {#Fold}
@@ -646,20 +660,17 @@ For example:
     product [ 1 , 2 , 3 , 4 ] ≡ 24
 
 ```agda
--- Your code goes here
+product : List ℕ → ℕ
+product xs = {!   !}
 ```
 
 #### Exercise `foldr-++` (recommended)
 
 Show that fold and append are related as follows:
 ```agda
-postulate
-  foldr-++ : ∀ {A B : Set} (_⊗_ : A → B → B) (e : B) (xs ys : List A) →
-    foldr _⊗_ e (xs ++ ys) ≡ foldr _⊗_ (foldr _⊗_ e ys) xs
-```
-
-```agda
--- Your code goes here
+foldr-++ : ∀ {A B : Set} (_⊗_ : A → B → B) (e : B) (xs ys : List A) →
+  foldr _⊗_ e (xs ++ ys) ≡ foldr _⊗_ (foldr _⊗_ e ys) xs
+foldr-++ _⊗_ e xs ys = {!   !}
 ```
 
 #### Exercise `foldr-∷` (practice)
@@ -674,7 +685,15 @@ Show as a consequence of `foldr-++` above that
 
 
 ```agda
--- Your code goes here
+foldr-∷ :
+    {A : Set} → (xs : List A)
+  → foldr _∷_ [] xs ≡ xs
+foldr-∷ xs = {!   !}
+
+foldr-++-consequence :
+    {A : Set} → (xs ys : List A)
+  → xs ++ ys ≡ foldr _∷_ ys xs
+foldr-++-consequence xs ys = {!   !}
 ```
 
 #### Exercise `map-is-foldr` (practice)
@@ -686,7 +705,11 @@ Show that map can be defined using fold:
 The proof requires extensionality.
 
 ```agda
--- Your code goes here
+map-is-foldr :
+    {A B : Set}
+  → (f : A → B)
+  → map f ≡ foldr (λ x xs → f x ∷ xs) []
+map-is-foldr f = {!   !}
 ```
 
 #### Exercise `fold-Tree` (practice)
@@ -697,15 +720,21 @@ Define a suitable fold function for the type of trees given earlier:
 
 
 ```agda
--- Your code goes here
+fold-Tree : ∀ {A B C : Set} → (A → C) → (C → B → C → C) → Tree A B → C
+fold-Tree leaf′ node′ tree = {!   !}
 ```
 
 #### Exercise `map-is-fold-Tree` (practice)
 
 Demonstrate an analogue of `map-is-foldr` for the type of trees.
 
+map-Tree : ∀ {A B C D : Set} → (A → C) → (B → D) → Tree A B → Tree C D
 ```agda
--- Your code goes here
+map-is-fold-Tree :
+    {A B C D : Set}
+  → (f : A → C) → (g : B → D)
+  → map-Tree f g ≡ fold-Tree {!   !} {!   !}
+map-is-fold-Tree f g = {!   !}
 ```
 
 #### Exercise `sum-downFrom` (stretch)
@@ -727,7 +756,8 @@ equal to `n * (n ∸ 1) / 2`:
     sum (downFrom n) * 2 ≡ n * (n ∸ 1)
 
 ```agda
--- Your code goes here
+sum∘downFrom : (n : ℕ) → sum (downFrom n) * 2 ≡ n * (n ∸ 1)
+sum∘downFrom n = {!   !}
 ```
 
 ## Monoids
@@ -832,7 +862,8 @@ operations associate to the left rather than the right.  For example:
     foldl _⊗_ e [ x , y , z ]  =  ((e ⊗ x) ⊗ y) ⊗ z
 
 ```agda
--- Your code goes here
+foldl : ∀ {A B : Set} → (B → A → B) → B → List A → B
+foldl _⊗_ e xs = {!   !}
 ```
 
 
@@ -842,7 +873,11 @@ Show that if `_⊗_` and `e` form a monoid, then `foldr _⊗_ e` and
 `foldl _⊗_ e` always compute the same result.
 
 ```agda
--- Your code goes here
+foldr-monoid-fold :
+    ∀ {A : Set} (_⊗_ : A → A → A) (e : A)
+  → IsMonoid _⊗_ e
+  → foldr _⊗_ e ≡ foldl _⊗_ e
+foldr-monoid-fold _⊗_ e monoid-⊗ = {!   !}
 ```
 
 
@@ -960,7 +995,12 @@ replacement for `_×_`.  As a consequence, demonstrate an equivalence relating
 `_∈_` and `_++_`.
 
 ```agda
--- Your code goes here
+open import Data.Sum using (_⊎_; inj₁; inj₂)
+
+Any-++-⇔ :
+    ∀ {A : Set} {P : A → Set} (xs ys : List A)
+  → Any P (xs ++ ys) ⇔ (Any P xs ⊎ Any P ys)
+Any-++-⇔ xs ys = {!   !}
 ```
 
 #### Exercise `All-++-≃` (stretch)
@@ -968,7 +1008,9 @@ replacement for `_×_`.  As a consequence, demonstrate an equivalence relating
 Show that the equivalence `All-++-⇔` can be extended to an isomorphism.
 
 ```agda
--- Your code goes here
+All-++-≃ : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
+  All P (xs ++ ys) ≃ (All P xs × All P ys)
+All-++-≃ xs ys = {!   !}
 ```
 
 #### Exercise `¬Any⇔All¬` (recommended)
@@ -989,7 +1031,11 @@ If so, prove; if not, explain why.
 
 
 ```agda
--- Your code goes here
+¬Any⇔All¬ :
+    {A : Set} → {P : A → Set}
+  → (xs : List A)
+  → (¬_ ∘ Any P) xs ⇔ All (¬_ ∘ P) xs
+¬Any⇔All¬ xs = {!   !}
 ```
 
 #### Exercise `¬Any≃All¬` (stretch)
@@ -997,7 +1043,11 @@ If so, prove; if not, explain why.
 Show that the equivalence `¬Any⇔All¬` can be extended to an isomorphism.
 
 ```agda
--- Your code goes here
+¬Any≃All¬ :
+    {A : Set} → {P : A → Set}
+  → (xs : List A)
+  → (¬_ ∘ Any P) xs ≃ All (¬_ ∘ P) xs
+¬Any≃All¬ xs = {!   !}
 ```
 
 #### Exercise `All-∀` (practice)
@@ -1064,7 +1114,7 @@ analogues `any` and `Any?` which determine whether a predicate holds
 for some element of a list.  Give their definitions.
 
 ```agda
--- Your code goes here
+_ = {!   !}
 ```
 
 
@@ -1110,7 +1160,10 @@ with their corresponding proofs.
       → ∃[ xs ] ∃[ ys ] ( merge xs ys zs × All P xs × All (¬_ ∘ P) ys )
 
 ```agda
--- Your code goes here
+split :
+    ∀ {A : Set} {P : A → Set} (P? : Decidable P) (zs : List A)
+  → ∃[ xs ] ∃[ ys ] ( merge xs ys zs × All P xs × All (¬_ ∘ P) ys )
+split P? zs = {!   !}
 ```
 
 ## Standard Library
