@@ -721,17 +721,20 @@ module Bin where
   ¬One⟨⟩ : ¬ One ⟨⟩
   ¬One⟨⟩ ()
 
+  Can⟨⟩ : Can ⟨⟩
+  Can⟨⟩  =  zero
+
   One¬O : {b : Bin} → ¬ One b → ¬ (One (b O))
   One¬O ¬One (One O)  =  ¬One One
 
   One¬OI : {b : Bin} → ¬ One (b O) → ¬ (One ((b O) I))
   One¬OI ¬One (One I)  =  ¬One One
 
-  -- Important: strengthen the restriction on the premise to loose the restriction on the conclusion
+  -- It is important to strengthen the restriction on the premise
+  -- in order to subsequently loosen the restriction on the conclusion.
   One¬II : {b : Bin} → ¬ One (b I) → ¬ (One ((b I) I))
   One¬II ¬One (One I)  =  ¬One One
 
-  -- One¬I : {b : Bin} → ¬ One b → One (b I) ⊎ ¬ (One (b I))
   One¬I : {b : Bin} → ¬ One b → Dec (One (b I))
   One¬I {⟨⟩}  _     =  yes one
   One¬I {b O} ¬One  =  no  (One¬OI ¬One)
@@ -746,39 +749,28 @@ module Bin where
   Can¬II : {b : Bin} → ¬ One (b I) → ¬ (Can ((b I) I))
   Can¬II ¬One (ones (One I))  =  ¬One One
 
-  Can¬I : {b : Bin} → ¬ One b → Can ⟨⟩ ⊎ ¬ (Can (b I))
-  Can¬I {⟨⟩}  _     =  inj₁ zero
-  Can¬I {b O} ¬One  =  inj₂ (Can¬OI ¬One)
-  Can¬I {b I} ¬One  =  inj₂ (Can¬II ¬One)
+  Can¬I : {b : Bin} → ¬ One b → Dec (Can (b I))
+  Can¬I {⟨⟩}  _     =  yes (ones one)
+  Can¬I {b O} ¬One  =  no  (Can¬OI ¬One)
+  Can¬I {b I} ¬One  =  no  (Can¬II ¬One)
 
   One? : ∀ (b : Bin) → Dec (One b)
-  One? ⟨⟩                =  no (λ ())
+  One? ⟨⟩                  =  no ¬One⟨⟩
   One? (b O) with One? b
-  ...           | yes b  =  yes (b O)
-  ...           | no ¬b  =  no  (One¬O ¬b)
+  ...           | yes One  =  yes (One O)
+  ...           | no ¬One  =  no  (One¬O ¬One)
   One? (b I) with One? b
-  ...           | yes b  =  yes (b I)
-  ...           | no ¬b  =  One¬I ¬b
-  -- One? (⟨⟩ I)            =  yes one
-  -- One? ((b O) I) with One? (b O)
-  -- ...           | yes b  =  yes (b I)
-  -- ...           | no ¬b  =  no  (One¬OI ¬b)
-  -- One? ((b I) I) with One? (b I)
-  -- ...           | yes b  =  yes (b I)
-  -- ...           | no ¬b  =  no  (One¬II ¬b)
+  ...           | yes One  =  yes (One I)
+  ...           | no ¬One  =  One¬I ¬One
 
   Can? : ∀ (b : Bin) → Dec (Can b)
-  Can? ⟨⟩                      =  yes zero
+  Can? ⟨⟩                  =  yes Can⟨⟩
   Can? (b O) with One? b
-  ...          | yes One       =  yes (ones  (One O))
-  ...          | no ¬One       =  no  (Can¬O ¬One)
-  Can? (⟨⟩ I)                  =  yes (ones one)
-  Can? ((b O) I) with One? (b O)
-  ...               | yes One  =  yes (ones (One I))
-  ...               | no ¬One  =  no  (Can¬OI ¬One)
-  Can? ((b I) I) with One? (b I)
-  ...               | yes One  =  yes (ones (One I))
-  ...               | no ¬One  =  no  (Can¬II ¬One)
+  ...          | yes One   =  yes (ones  (One O))
+  ...          | no ¬One   =  no  (Can¬O ¬One)
+  Can? (b I) with One? b
+  ...           | yes One  =  yes (ones (One I))
+  ...           | no ¬One  =  Can¬I ¬One
 ```
 
 
