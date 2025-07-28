@@ -1045,7 +1045,7 @@ module Bin where
   to∘from≡id b (ones x)  =  helper b x
     where
       helper : (b : Bin) → One b → to (from b) ≡ b
-      helper (⟨⟩ I) one = refl
+      helper (⟨⟩ I) one             = refl
       helper (b I) (One₁ I)
         rewrite +-comm (from b * 2) 1
               | to∘*2∘from≡O b One₁ = refl
