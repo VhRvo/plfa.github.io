@@ -22,7 +22,7 @@ open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _∸_; _≤_; s≤s; z≤n
 open import Data.Nat.Properties using
   (+-assoc; +-identityˡ; +-identityʳ; *-assoc; *-identityˡ; *-identityʳ; *-distribʳ-+)
 open import Relation.Nullary using (¬_; Dec; yes; no)
-open import Data.Product using (_×_; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
+open import Data.Product using (_×_; proj₁; proj₂; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
 open import Function using (_∘_)
 open import Level using (Level)
 open import plfa.part1.Isomorphism using (_≃_; _⇔_)
@@ -1223,16 +1223,17 @@ All-++-⇔ : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
   All P (xs ++ ys) ⇔ (All P xs × All P ys)
 All-++-⇔ xs ys =
   record
-    { to       =  to xs ys
-    ; from     =  from xs ys
+    { to    =  to xs ys
+    ; from  =  from xs ys
     }
   where
 
   to : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
     All P (xs ++ ys) → (All P xs × All P ys)
   to [] ys Pys = ⟨ [] , Pys ⟩
-  to (x ∷ xs) ys (Px ∷ Pxs++ys) with to xs ys Pxs++ys
-  ... | ⟨ Pxs , Pys ⟩ = ⟨ Px ∷ Pxs , Pys ⟩
+  to (x ∷ xs) ys (Px ∷ Pxs++ys)
+    with to xs ys Pxs++ys
+  ...  | ⟨ Pxs , Pys ⟩ = ⟨ Px ∷ Pxs , Pys ⟩
 
   from : ∀ { A : Set} {P : A → Set} (xs ys : List A) →
     All P xs × All P ys → All P (xs ++ ys)
@@ -1249,10 +1250,39 @@ replacement for `_×_`.  As a consequence, demonstrate an equivalence relating
 ```agda
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 
+Any-++ˡ :
+    ∀ {A : Set} {P : A → Set} (xs ys : List A)
+  → Any P xs → Any P (xs ++ ys)
+Any-++ˡ (x ∷ xs) ys (here Px)    =  here Px
+Any-++ˡ (x ∷ xs) ys (there Pxs)  =  there (Any-++ˡ xs ys Pxs)
+
+Any-++ʳ :
+    ∀ {A : Set} {P : A → Set} (xs ys : List A)
+  → Any P ys → Any P (xs ++ ys)
+Any-++ʳ []       ys Pys  =  Pys
+Any-++ʳ (x ∷ xs) ys Pys  =  there (Any-++ʳ xs ys Pys)
+
 Any-++-⇔ :
     ∀ {A : Set} {P : A → Set} (xs ys : List A)
   → Any P (xs ++ ys) ⇔ (Any P xs ⊎ Any P ys)
-Any-++-⇔ xs ys = {!   !}
+Any-++-⇔ {A} {P} xs ys =
+  record
+    { to   = to xs ys
+    ; from = from xs ys
+    }
+  where
+
+    to : (xs ys : List A) → Any P (xs ++ ys) → (Any P xs ⊎ Any P ys)
+    to []       ys Pys        =  inj₂ Pys
+    to (x ∷ xs) ys (here Px)  =  inj₁ (here Px)
+    to (x ∷ xs) ys (there Pxs++ys)
+      with to xs ys Pxs++ys
+    ...  | inj₁ Pxs  =  inj₁ (there Pxs)
+    ...  | inj₂ Pys  =  inj₂ Pys
+
+    from : (xs ys : List A) → (Any P xs ⊎ Any P ys) → Any P (xs ++ ys)
+    from xs ys (inj₁ Pxs)  =  Any-++ˡ xs ys Pxs
+    from xs ys (inj₂ Pys)  =  Any-++ʳ xs ys Pys
 ```
 
 #### Exercise `All-++-≃` (stretch)
@@ -1262,7 +1292,62 @@ Show that the equivalence `All-++-⇔` can be extended to an isomorphism.
 ```agda
 All-++-≃ : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
   All P (xs ++ ys) ≃ (All P xs × All P ys)
-All-++-≃ xs ys = {!   !}
+All-++-≃ {A} {P} xs ys =
+  record
+    { to      = to xs ys
+    ; from    = from xs ys
+    ; from∘to = from∘to xs ys
+    ; to∘from = to∘from xs ys
+    }
+  where
+  to : (xs ys : List A) → All P (xs ++ ys) → (All P xs × All P ys)
+  to xs ys = _⇔_.to (All-++-⇔ xs ys)
+
+  from : (xs ys : List A) → (All P xs × All P ys) → All P (xs ++ ys)
+  from xs ys = _⇔_.from (All-++-⇔ xs ys)
+
+  helper : (x : A) (xs ys : List A) (Px : P x) (Pxs++ys : All P (xs ++ ys)) (Pxs×Pys : All P xs × All P ys)
+    -- → (to xs ys Pxs++ys ≡ Pxs×Pys)
+    → (Pxs×Pys ≡ to xs ys Pxs++ys)
+    → from (x ∷ xs) ys (to (x ∷ xs) ys (Px ∷ Pxs++ys)) ≡ Px ∷ from xs ys Pxs×Pys
+  helper x xs ys Px Pxs++ys ⟨ Pxs , Pys ⟩ refl = -- {!   !}
+    begin
+      from (x ∷ xs) ys (to (x ∷ xs) ys (Px ∷ Pxs++ys))
+    ≡⟨⟩
+      from (x ∷ xs) ys ⟨ Px ∷ Pxs , Pys ⟩
+    ≡⟨⟩
+      Px ∷ from xs ys ⟨ Pxs , Pys ⟩
+    ∎
+
+  from∘to : (xs ys : List A) → (all : All P (xs ++ ys)) → from xs ys (to xs ys all) ≡ all
+  from∘to []       ys all            = refl
+  from∘to (x ∷ xs) ys (Px ∷ Pxs++ys) =
+    begin
+      from (x ∷ xs) ys (to (x ∷ xs) ys (Px ∷ Pxs++ys))
+    ≡⟨⟩
+      from (x ∷ xs) ys (⟨ Px ∷ proj₁ (to xs ys Pxs++ys) , proj₂ (to xs ys Pxs++ys) ⟩)
+    ≡⟨⟩
+      Px ∷ from xs ys (⟨ proj₁ (to xs ys Pxs++ys) , proj₂ (to xs ys Pxs++ys) ⟩)
+    ≡⟨⟩
+      Px ∷ from xs ys (to xs ys Pxs++ys)
+    ≡⟨ cong (Px ∷_) (from∘to xs ys Pxs++ys) ⟩
+      Px ∷ Pxs++ys
+    ∎
+
+  to∘from : (xs ys : List A) → (all : (All P xs × All P ys)) → to xs ys (from xs ys all) ≡ all
+  to∘from []       ys ⟨ []       , Pys ⟩ = refl
+  to∘from (x ∷ xs) ys ⟨ Px ∷ Pxs , Pys ⟩ =
+    begin
+      to (x ∷ xs) ys (from (x ∷ xs) ys ⟨ Px ∷ Pxs , Pys ⟩)
+    ≡⟨⟩
+      to (x ∷ xs) ys (Px ∷ from xs ys ⟨ Pxs , Pys ⟩)
+    ≡⟨⟩
+      ⟨ Px ∷ proj₁ (to xs ys (from xs ys ⟨ Pxs , Pys ⟩)) , proj₂ (to xs ys (from xs ys ⟨ Pxs , Pys ⟩))  ⟩
+    ≡⟨ cong (λ e → ⟨ Px ∷ proj₁ e , proj₂ e ⟩ ) (to∘from xs ys ⟨ Pxs , Pys ⟩) ⟩
+      ⟨ Px ∷ proj₁ ⟨ Pxs , Pys ⟩ , proj₂ ⟨ Pxs , Pys ⟩ ⟩
+    ≡⟨⟩
+      ⟨ Px ∷ Pxs , Pys ⟩
+    ∎
 ```
 
 #### Exercise `¬Any⇔All¬` (recommended)
@@ -1287,7 +1372,24 @@ If so, prove; if not, explain why.
     {A : Set} → {P : A → Set}
   → (xs : List A)
   → (¬_ ∘ Any P) xs ⇔ All (¬_ ∘ P) xs
-¬Any⇔All¬ xs = {!   !}
+¬Any⇔All¬ {A} {P} xs =
+  record
+    { to   = to xs
+    ; from = from xs
+    }
+  where
+
+    to :
+        (xs : List A)
+      → (¬_ ∘ Any P) xs → All (¬_ ∘ P) xs
+    to [] = {!   !}
+    to (x ∷ xs) = {!   !}
+
+    from :
+        (xs : List A)
+      → All (¬_ ∘ P) xs → (¬_ ∘ Any P) xs
+    from [] = {!   !}
+    from (x ∷ xs) = {!   !}
 ```
 
 #### Exercise `¬Any≃All¬` (stretch)
@@ -1307,7 +1409,8 @@ Show that the equivalence `¬Any⇔All¬` can be extended to an isomorphism.
 Show that `All P xs` is isomorphic to `∀ x → x ∈ xs → P x`.
 
 ```agda
--- You code goes here
+All-∀ : {A : Set} → {P : A → Set} → {xs : List A} → All P xs ≃ ∀ x → x ∈ xs → P x
+All-∀ = {!   !}
 ```
 
 
@@ -1316,7 +1419,8 @@ Show that `All P xs` is isomorphic to `∀ x → x ∈ xs → P x`.
 Show that `Any P xs` is isomorphic to `∃[ x ] (x ∈ xs × P x)`.
 
 ```agda
--- You code goes here
+Any-∃ : {A : Set} → {P : A → Set} → {xs : List A} → Any P xs ≃ ∃[ x ] (x ∈ xs × P x)
+Any-∃ = {!   !}
 ```
 
 
