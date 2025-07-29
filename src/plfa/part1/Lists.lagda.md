@@ -1316,30 +1316,10 @@ All-++-≃ {A} {P} xs ys =
     in
       from (x ∷ xs) ys ⟨ Px ∷ Pxs , Pys ⟩
     ≡⟨⟩
-      Px ∷ from xs ys ⟨ Pxs , Pys ⟩ -- (to xs ys Pxs++ys)
+      Px ∷ from xs ys (to xs ys Pxs++ys)
     ≡⟨ cong (Px ∷_) (from∘to xs ys Pxs++ys) ⟩
       Px ∷ Pxs++ys
     ∎
-    where
-
-    helper1 : {x : A} {xs ys : List A}
-        (Px : P x) (Pxs++ys : All P (xs ++ ys)) (Pxs,Pys : All P xs × All P ys)
-      → (Pxs,Pys ≡ to xs ys Pxs++ys)
-      → to (x ∷ xs) ys (Px ∷ Pxs++ys) ≡ ⟨ Px ∷ proj₁ Pxs,Pys , proj₂ Pxs,Pys ⟩
-    helper1 Px Pxs++ys ⟨ Pxs , Pys ⟩ refl = refl
-
-    helper2 : (x : A) (xs ys : List A)
-        (Px : P x) (Pxs++ys : All P (xs ++ ys)) (Pxs,Pys : All P xs × All P ys)
-      → (Pxs,Pys ≡ to xs ys Pxs++ys)
-      → from (x ∷ xs) ys (to (x ∷ xs) ys (Px ∷ Pxs++ys)) ≡ Px ∷ from xs ys Pxs,Pys
-    helper2 x xs ys Px Pxs++ys ⟨ Pxs , Pys ⟩ refl =
-      begin
-        from (x ∷ xs) ys (to (x ∷ xs) ys (Px ∷ Pxs++ys))
-      ≡⟨ cong (from (x ∷ xs) ys) (helper1 Px Pxs++ys ⟨ Pxs , Pys ⟩ refl) ⟩
-        from (x ∷ xs) ys ⟨ Px ∷ Pxs , Pys ⟩
-      ≡⟨⟩
-        Px ∷ from xs ys ⟨ Pxs , Pys ⟩
-      ∎
 
   to∘from : (xs ys : List A) → (all : (All P xs × All P ys)) → to xs ys (from xs ys all) ≡ all
   to∘from []       ys ⟨ []       , Pys ⟩ = refl
