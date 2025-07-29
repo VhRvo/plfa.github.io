@@ -1329,13 +1329,11 @@ All-++-≃ {A} {P} xs ys =
     ≡⟨⟩
       to (x ∷ xs) ys (Px ∷ from xs ys ⟨ Pxs , Pys ⟩)
     ≡⟨⟩
-    let e = to xs ys (from xs ys ⟨ Pxs , Pys ⟩)
+    let ⟨ Pxs′ , Pys′ ⟩  = to xs ys (from xs ys ⟨ Pxs , Pys ⟩)
     in
-      ⟨ Px ∷ proj₁ e , proj₂ e  ⟩
+      ⟨ Px ∷ Pxs′ , Pys′ ⟩
     ≡⟨ cong (λ e → ⟨ Px ∷ proj₁ e , proj₂ e ⟩ ) (to∘from xs ys ⟨ Pxs , Pys ⟩) ⟩
-      ⟨ Px ∷ proj₁ ⟨ Pxs , Pys ⟩ , proj₂ ⟨ Pxs , Pys ⟩ ⟩
-    ≡⟨⟩
-      ⟨ Px ∷ Pxs , Pys ⟩
+      ⟨ Px ∷ Pxs ,  Pys ⟩
     ∎
 ```
 
