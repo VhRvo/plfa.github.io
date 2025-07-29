@@ -766,8 +766,8 @@ module Bin where
   Can? : ∀ (b : Bin) → Dec (Can b)
   Can? ⟨⟩                  =  yes Can⟨⟩
   Can? (b O) with One? b
-  ...          | yes One   =  yes (ones  (One O))
-  ...          | no ¬One   =  no  (Can¬O ¬One)
+  ...           | yes One   =  yes (ones  (One O))
+  ...           | no ¬One   =  no  (Can¬O ¬One)
   Can? (b I) with One? b
   ...           | yes One  =  yes (ones (One I))
   ...           | no ¬One  =  Can¬I ¬One

@@ -1291,7 +1291,6 @@ Show that the equivalence `All-++-⇔` can be extended to an isomorphism.
 `Any-++-⇔` cannot be extended to an isomorphism because `Any` only remember one element satisfy the property.
 
 ```agda
-
 All-++-≃ : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
   All P (xs ++ ys) ≃ (All P xs × All P ys)
 All-++-≃ {A} {P} xs ys =
@@ -1308,13 +1307,18 @@ All-++-≃ {A} {P} xs ys =
   from : (xs : List A) → (All P xs × All P ys) → All P (xs ++ ys)
   from xs = _⇔_.from (All-++-⇔ xs ys)
 
-  from∘to : (xs : List A) → (all : All P (xs ++ ys)) → from xs (to xs all) ≡ all
+  from∘to :
+      (xs : List A)
+    → (all : All P (xs ++ ys))
+    → from xs (to xs all) ≡ all
   from∘to []       all            = refl
   from∘to (x ∷ xs) (Px ∷ Pxs++ys) =
     begin
       from (x ∷ xs) (to (x ∷ xs) (Px ∷ Pxs++ys))
     ≡⟨⟩
     let ⟨ Pxs , Pys ⟩ = to xs Pxs++ys
+    -- Pys = to xs Pxs++ys .proj₂
+    -- Pxs = to xs Pxs++ys .proj₁
     in
       from (x ∷ xs) ⟨ Px ∷ Pxs , Pys ⟩
     ≡⟨⟩
@@ -1323,7 +1327,10 @@ All-++-≃ {A} {P} xs ys =
       Px ∷ Pxs++ys
     ∎
 
-  to∘from : (xs : List A) → (all : (All P xs × All P ys)) → to xs (from xs all) ≡ all
+  to∘from :
+      (xs : List A)
+    → (all : (All P xs × All P ys))
+    → to xs (from xs all) ≡ all
   to∘from []       ⟨ []       , Pys ⟩ = refl
   to∘from (x ∷ xs) ⟨ Px ∷ Pxs , Pys ⟩ =
     begin
@@ -1332,15 +1339,62 @@ All-++-≃ {A} {P} xs ys =
       to (x ∷ xs) (Px ∷ from xs ⟨ Pxs , Pys ⟩)
     ≡⟨⟩
     let ⟨ Pxs′ , Pys′ ⟩ = to xs (from xs ⟨ Pxs , Pys ⟩)
-    -- Pxs′ = to xs (from xs ⟨ Pxs , Pys ⟩).proj₁
-    -- Pys′ = to xs (from xs ⟨ Pxs , Pys ⟩).proj₂
+    -- Pxs′ = (to xs (from xs ⟨ Pxs , Pys ⟩)).proj₁
+    -- Pys′ = (to xs (from xs ⟨ Pxs , Pys ⟩)).proj₂
     in
       ⟨ Px ∷ Pxs′ , Pys′ ⟩
     ≡⟨ cong (λ e → ⟨ Px ∷ proj₁ e , proj₂ e ⟩ ) (to∘from xs ⟨ Pxs , Pys ⟩) ⟩
       ⟨ Px ∷ Pxs  ,  Pys ⟩
     ∎
+```
 
-  to∘from′ : (xs : List A) → (all : (All P xs × All P ys)) → to xs (from xs all) ≡ all
+Alternative implementation:
+
+```agda
+All-++-≃′ : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
+  All P (xs ++ ys) ≃ (All P xs × All P ys)
+All-++-≃′ {A} {P} xs ys =
+  record
+    { to      = to xs
+    ; from    = from xs
+    ; from∘to = from∘to′ xs
+    ; to∘from = to∘from′ xs
+    }
+  where
+  to : (xs : List A) → All P (xs ++ ys) → (All P xs × All P ys)
+  to xs = _⇔_.to (All-++-⇔ xs ys)
+
+  from : (xs : List A) → (All P xs × All P ys) → All P (xs ++ ys)
+  from xs = _⇔_.from (All-++-⇔ xs ys)
+
+  from∘to′ :
+      (xs : List A)
+     → (all : All P (xs ++ ys))
+    → from xs (to xs all) ≡ all
+  from∘to′ []       all            = refl
+  from∘to′ (x ∷ xs) (Px ∷ Pxs++ys) = helper (to xs Pxs++ys) refl
+    where
+
+    helper :
+        (Pxs,Pys : (All P xs × All P ys))
+      → (Pxs,Pys ≡ to xs Pxs++ys)
+      → from (x ∷ xs) (to (x ∷ xs) (Px ∷ Pxs++ys)) ≡ Px ∷ Pxs++ys
+    helper ⟨ Pxs′ , Pys′ ⟩ refl =
+      -- ⊢ from (x ∷ xs) (to (x ∷ xs) (Px ∷ Pxs++ys)) ≡ Px ∷ Pxs++ys
+      -- Pxs′ = (to xs Pxs++ys).proj₁
+      -- Pys′ = (to xs Pxs++ys).proj₂
+      begin
+        from (x ∷ xs) (to (x ∷ xs) (Px ∷ Pxs++ys))
+      ≡⟨⟩
+        Px ∷ from xs (to xs Pxs++ys)
+      ≡⟨ cong (Px ∷_) (from∘to′ xs Pxs++ys) ⟩
+        Px ∷ Pxs++ys
+      ∎
+
+  to∘from′ :
+      (xs : List A)
+    → (all : (All P xs × All P ys))
+    → to xs (from xs all) ≡ all
   to∘from′ []       ⟨ []       , Pys ⟩ = refl
   to∘from′ (x ∷ xs) ⟨ Px ∷ Pxs , Pys ⟩ =
     begin
@@ -1357,8 +1411,9 @@ All-++-≃ {A} {P} xs ys =
       → (Pxs,Pys ≡ to xs (from xs ⟨ Pxs , Pys ⟩))
       → to (x ∷ xs) (Px ∷ from xs ⟨ Pxs , Pys ⟩) ≡ ⟨ Px ∷ Pxs  ,  Pys ⟩
     helper ⟨ Pxs′ , Pys′ ⟩ refl =
-      -- Pxs′ = to xs (from xs ⟨ Pxs , Pys ⟩).proj₁
-      -- Pys′ = to xs (from xs ⟨ Pxs , Pys ⟩).proj₂
+      -- ⊢ to (x ∷ xs) (Px ∷ from xs ⟨ Pxs , Pys ⟩) ≡ ⟨ Px ∷ Pxs , Pys ⟩
+      -- Pxs′ = (to xs (from xs ⟨ Pxs , Pys ⟩)).proj₁
+      -- Pys′ = (to xs (from xs ⟨ Pxs , Pys ⟩)).proj₂
       begin
         to (x ∷ xs) (Px ∷ from xs ⟨ Pxs , Pys ⟩)
       ≡⟨⟩
@@ -1412,15 +1467,63 @@ If so, prove; if not, explain why.
 
     to :
         (xs : List A)
-      → (¬_ ∘ Any P) xs → All (¬_ ∘ P) xs
-    to [] = {!   !}
-    to (x ∷ xs) = {!   !}
+      → (¬_ ∘ Any P) xs
+      → All (¬_ ∘ P) xs
+    to []       _     =  []
+    to (x ∷ xs) ¬Any[x∷xs]  =
+      (λ Px → ¬Any[x∷xs] (here Px))
+        ∷ to xs (λ Any[xs] → ¬Any[x∷xs] (there Any[xs]))
 
     from :
         (xs : List A)
-      → All (¬_ ∘ P) xs → (¬_ ∘ Any P) xs
-    from [] = {!   !}
-    from (x ∷ xs) = {!   !}
+      → All (¬_ ∘ P) xs
+      → (¬_ ∘ Any P) xs
+    from []       []          ()
+    from (x ∷ xs) (¬Px ∷ ¬Pxs)  =
+      λ { (here Px)        →  ¬Px Px
+        ; (there Any[xs])  →  from xs ¬Pxs Any[xs] }
+```
+
+```agda
+open import Relation.Nullary using (contradiction)
+
+¬All⇔Any¬ :
+    {A : Set} → {P : A → Set}
+  → (xs : List A)
+  → (¬_ ∘ All P) xs ⇔ Any (¬_ ∘ P) xs
+¬All⇔Any¬ {A} {P} xs =
+  record
+    { to = to xs
+    ; from = from xs
+    }
+  where
+
+  postulate
+    em : ∀ {A : Set} → A ⊎ ¬ A
+
+  to : (xs : List A)
+    → ((¬_ ∘ All P) xs) → (Any (¬_ ∘ P) xs)
+  to []       ¬P[]     =  contradiction [] ¬P[]
+  to (x ∷ xs) ¬P[x∷xs] with em
+  ...                   | inj₁  Px with em
+  ...                                 | inj₁  Pxs = contradiction (Px ∷ Pxs) ¬P[x∷xs]
+  ...                                 | inj₂ ¬Pxs = there (to xs ¬Pxs)
+  to (x ∷ xs) ¬P[x∷xs]  | inj₂ ¬Px = here ¬Px
+
+  from : (xs : List A)
+    → (Any (¬_ ∘ P) xs) → ((¬_ ∘ All P) xs)
+  from (x ∷ xs) (here ¬Px)   (Px ∷ Pxs)  =  ¬Px Px
+  from (x ∷ xs) (there Any¬) (Px ∷ Pxs)  =  from xs Any¬ Pxs
+```
+
+How to prove `¬All⇔Any¬` is irrefutable without using the law of excluded middle?
+
+```agda
+-- ¬¬[¬All⇔Any¬] :
+--     {A : Set} → {P : A → Set}
+--   → (xs : List A)
+--   → ¬ (¬ ((¬_ ∘ All P) xs ⇔ Any (¬_ ∘ P) xs))
+-- ¬¬[¬All⇔Any¬] xs ¬[¬All⇔Any¬] = ?
 ```
 
 #### Exercise `¬Any≃All¬` (stretch)
@@ -1432,7 +1535,70 @@ Show that the equivalence `¬Any⇔All¬` can be extended to an isomorphism.
     {A : Set} → {P : A → Set}
   → (xs : List A)
   → (¬_ ∘ Any P) xs ≃ All (¬_ ∘ P) xs
-¬Any≃All¬ xs = {!   !}
+¬Any≃All¬ {A} {P} xs =
+  record
+    { to = to xs
+    ; from = from xs
+    ; from∘to = from∘to xs
+    ; to∘from = to∘from xs
+    }
+  where
+
+  to :
+      (xs : List A)
+    → (¬_ ∘ Any P) xs
+    → All (¬_ ∘ P) xs
+  to xs = _⇔_.to (¬Any⇔All¬ xs)
+
+  from :
+      (xs : List A)
+    → All (¬_ ∘ P) xs
+    → (¬_ ∘ Any P) xs
+  from xs = _⇔_.from (¬Any⇔All¬ xs)
+
+  from∘to :
+      (xs : List A)
+    → (¬Any[Pxs] : (¬_ ∘ Any P) xs)
+    → from xs (to xs ¬Any[Pxs]) ≡ ¬Any[Pxs]
+  from∘to xs ¬Any[xs]  = refl
+  -- comments in Data.Empty
+  -- ⊥ is defined via Data.Irrelevant (a record with a single irrelevant
+  -- field) so that Agda can judgementally declare that all proofs of ⊥
+  -- are equal to each other. In particular this means that all functions
+  -- returning a proof of ⊥ are equal.
+
+  to∘from :
+      (xs : List A)
+    → (¬Pxs : All (¬_ ∘ P) xs)
+    → to xs (from xs ¬Pxs) ≡ ¬Pxs
+  to∘from [] [] =
+    begin
+      to [] (from [] [])
+    ≡⟨⟩
+      to [] (λ ())
+    ≡⟨⟩
+      []
+    ∎
+  to∘from (x ∷ xs) (¬Px ∷ ¬Pxs) =
+    begin
+      to (x ∷ xs) (from (x ∷ xs) (¬Px ∷ ¬Pxs))
+    ≡⟨⟩
+    let ¬Any[x∷xs] = from (x ∷ xs) (¬Px ∷ ¬Pxs)
+        -- λ { (here Px)        →  ¬Px Px
+        --   ; (there Any[xs])  →  from xs ¬Pxs Any[xs] }
+    in
+      to (x ∷ xs) ¬Any[x∷xs]
+    ≡⟨⟩
+      (λ Px → ¬Any[x∷xs] (here Px))
+        ∷ to xs (λ Any[xs] → ¬Any[x∷xs] (there Any[xs]))
+    ≡⟨⟩
+      (λ Px → ¬Px Px)
+        ∷ to xs (λ Any[xs] → from xs ¬Pxs Any[xs])
+    ≡⟨⟩
+      ¬Px ∷ to xs (from xs ¬Pxs)
+    ≡⟨ cong (¬Px ∷_) (to∘from xs ¬Pxs) ⟩
+      ¬Px ∷ ¬Pxs
+    ∎
 ```
 
 #### Exercise `All-∀` (practice)
@@ -1440,8 +1606,87 @@ Show that the equivalence `¬Any⇔All¬` can be extended to an isomorphism.
 Show that `All P xs` is isomorphic to `∀ x → x ∈ xs → P x`.
 
 ```agda
+open import plfa.part1.Isomorphism using (∀-extensionality)
+
 All-∀ : {A : Set} → {P : A → Set} → {xs : List A} → All P xs ≃ ∀ x → x ∈ xs → P x
-All-∀ = {!   !}
+All-∀ {A} {P} {xs} =
+  record
+    { to      = to xs
+    ; from    = from xs
+    ; from∘to = from∘to xs
+    ; to∘from = to∘from xs
+    }
+  where
+
+  to :
+      (xs : List A)
+    → All P xs
+    → ∀ x → x ∈ xs → P x
+  to []       []          =  λ x ()
+  to (x ∷ xs) (Px ∷ Pxs)  =
+    λ{ .x (here  refl)  →  Px
+     ;  y (there y∈xs)  →  to xs Pxs y y∈xs }
+
+  from :
+      (xs : List A)
+    → (∀ x → x ∈ xs → P x)
+    → All P xs
+  from []       _   =  []
+  from (x ∷ xs) ∀P  =
+    ∀P x (here refl) ∷ from xs (λ y y∈xs → ∀P y (there y∈xs))
+
+  from∘to :
+      (xs : List A)
+    → (Pxs : All P xs)
+    → from xs (to xs Pxs) ≡ Pxs
+  from∘to xs       []         = refl
+  from∘to (x ∷ xs) (Px ∷ Pxs) =
+    begin
+      from (x ∷ xs) (to (x ∷ xs) (Px ∷ Pxs))
+    ≡⟨⟩
+    let ∀P = to (x ∷ xs) (Px ∷ Pxs)
+        -- λ{ .x (here  refl)  →  Px
+        --  ;  y (there y∈xs)  →  to xs Pxs y y∈xs }
+    in
+      from (x ∷ xs) ∀P
+    ≡⟨⟩
+      ∀P x (here refl) ∷ from xs (λ y y∈xs → ∀P y (there y∈xs))
+    ≡⟨⟩
+      Px ∷ from xs (λ y y∈xs → to xs Pxs y y∈xs)
+    ≡⟨⟩
+      Px ∷ from xs (to xs Pxs)
+    ≡⟨ cong (Px ∷_) (from∘to xs Pxs) ⟩
+      Px ∷ Pxs
+    ∎
+
+  to∘from :
+      (xs : List A)
+    → (∀P : ∀ x → x ∈ xs → P x)
+    → to xs (from xs ∀P) ≡ ∀P
+  to∘from xs ∀P = ∀-extensionality (λ x → extensionality (λ x∈xs → helper xs ∀P x x∈xs))
+    where
+
+    helper :
+        (xs : List A)
+      → (∀P : ∀ y → y ∈ xs → P y)
+      → (y : A) → (y∈xs : y ∈ xs)
+      → to xs (from xs ∀P) y y∈xs ≡ ∀P y y∈xs
+    helper (x ∷ xs) ∀P .x (here  refl) = refl
+    helper (x ∷ xs) ∀P  y (there y∈xs) =
+      begin
+        to (x ∷ xs) (from (x ∷ xs) ∀P) y (there y∈xs)
+      ≡⟨⟩
+        to
+          (x ∷ xs)
+          (∀P x (here refl) ∷ from xs (λ y y∈xs → ∀P y (there y∈xs)))
+          y (there y∈xs)
+      ≡⟨⟩
+        to xs (from xs (λ y y∈xs → ∀P y (there y∈xs))) y y∈xs
+      ≡⟨ helper xs (λ y y∈xs → ∀P y (there y∈xs)) y y∈xs ⟩
+        (λ y y∈xs → ∀P y (there y∈xs)) y y∈xs
+      ≡⟨⟩
+        ∀P y (there y∈xs)
+      ∎
 ```
 
 
@@ -1451,7 +1696,70 @@ Show that `Any P xs` is isomorphic to `∃[ x ] (x ∈ xs × P x)`.
 
 ```agda
 Any-∃ : {A : Set} → {P : A → Set} → {xs : List A} → Any P xs ≃ ∃[ x ] (x ∈ xs × P x)
-Any-∃ = {!   !}
+Any-∃ {A} {P} {xs} =
+  record
+    { to      = to xs
+    ; from    = from xs
+    ; from∘to = from∘to xs
+    ; to∘from = to∘from xs
+    }
+  where
+
+  to :
+      (xs : List A)
+    → Any P xs
+    → ∃[ x ] (x ∈ xs × P x)
+  to (x ∷ xs) (here  Px)       =  ⟨ x , ⟨ here refl , Px ⟩ ⟩
+  to (x ∷ xs) (there Any[xs])
+    with to xs Any[xs]
+  ...  | ⟨ y , ⟨ y∈xs , Py ⟩ ⟩  =  ⟨ y , ⟨ there y∈xs , Py ⟩ ⟩
+
+  from :
+      (xs : List A)
+    → ∃[ x ] (x ∈ xs × P x)
+    → Any P xs
+  from (x ∷ xs) ⟨ .x , ⟨ here  refl , Px ⟩ ⟩  =  here Px
+  from (x ∷ xs) ⟨  y , ⟨ there y∈xs , Py ⟩ ⟩  =  there (from xs ⟨ y , ⟨ y∈xs , Py ⟩ ⟩)
+
+  from∘to :
+      (xs : List A)
+    → (Any[xs] : Any P xs)
+    → from xs (to xs Any[xs]) ≡ Any[xs]
+  from∘to (x ∷ xs) (here Px)        =  refl
+  from∘to (x ∷ xs) (there Any[xs])  =
+    begin
+      from (x ∷ xs) (to (x ∷ xs) (there Any[xs]))
+    ≡⟨⟩
+    let ⟨ y , ⟨ y∈xs , Py ⟩ ⟩ = to xs Any[xs]
+    in
+      from (x ∷ xs) ⟨ y , ⟨ there y∈xs , Py ⟩ ⟩
+    ≡⟨⟩
+      there (from xs ⟨ y , ⟨ y∈xs , Py ⟩ ⟩)
+    ≡⟨⟩
+      there (from xs (to xs Any[xs]))
+    ≡⟨ cong there (from∘to xs Any[xs]) ⟩
+      there Any[xs]
+    ∎
+
+  to∘from :
+      (xs : List A)
+    → (∃P : ∃[ x ] (x ∈ xs × P x))
+    → to xs (from xs ∃P) ≡ ∃P
+  to∘from (x ∷ xs) ⟨ .x , ⟨ here refl  , Py ⟩ ⟩  =  refl
+  to∘from (x ∷ xs) ⟨  y , ⟨ there y∈xs , Py ⟩ ⟩  =
+    begin
+      to (x ∷ xs) (from (x ∷ xs) ⟨ y , ⟨ there y∈xs , Py ⟩ ⟩)
+    ≡⟨⟩
+      to (x ∷ xs) (there (from xs ⟨ y , ⟨ y∈xs , Py ⟩ ⟩))
+    ≡⟨⟩
+    let ⟨ y′ , ⟨ y∈xs′ , Py′ ⟩ ⟩ = to xs (from xs ⟨ y , ⟨ y∈xs , Py ⟩ ⟩)
+    in
+      ⟨ y′ , ⟨ there y∈xs′ , Py′ ⟩ ⟩
+    ≡⟨ cong
+        (λ{ ⟨ p1 , ⟨ p2 , p3 ⟩ ⟩ → ⟨ p1 , ⟨ there p2 , p3 ⟩ ⟩ })
+        (to∘from xs ⟨ y , ⟨ y∈xs , Py ⟩ ⟩)  ⟩
+      ⟨ y , ⟨ there y∈xs , Py ⟩ ⟩
+    ∎
 ```
 
 
@@ -1501,7 +1809,17 @@ analogues `any` and `Any?` which determine whether a predicate holds
 for some element of a list.  Give their definitions.
 
 ```agda
-_ = {!   !}
+any : ∀ {A : Set} → (A → Bool) → List A → Bool
+any p  =  foldr _∨_ false ∘ map p
+
+Any? : ∀ {A : Set} {P : A → Set} → Decidable P → Decidable (Any P)
+Any? _  []       = no (λ ())
+Any? P? (x ∷ xs) with P? x   | Any? P? xs
+...                 | yes Px | _           =  yes (here Px)
+...                 | no ¬Px | yes Pxs     =  yes (there Pxs)
+...                 | no ¬Px | no ¬Pxs     =
+  no (λ{ (here Px)    →  ¬Px  Px
+       ; (there Pxs)  →  ¬Pxs Pxs })
 ```
 
 
@@ -1530,7 +1848,6 @@ For example,
 ```agda
 _ : merge [ 1 , 4 ] [ 2 , 3 ] [ 1 , 2 , 3 , 4 ]
 _ = left-∷ (right-∷ (right-∷ (left-∷ [])))
-
 ```
 
 Given a decidable predicate and a list, we can split the list
@@ -1550,7 +1867,22 @@ with their corresponding proofs.
 split :
     ∀ {A : Set} {P : A → Set} (P? : Decidable P) (zs : List A)
   → ∃[ xs ] ∃[ ys ] ( merge xs ys zs × All P xs × All (¬_ ∘ P) ys )
-split P? zs = {!   !}
+split {A} {P} P? []  =  ⟨ [] , ⟨ [] , ⟨ [] , ⟨ [] , [] ⟩ ⟩ ⟩ ⟩
+split {A} {P} P? (z ∷ zs)
+  with split P? zs
+...  | ⟨ xs , ⟨ ys , ⟨ steps , ⟨ Pxs , ¬Pys ⟩ ⟩ ⟩ ⟩  =  helper xs ys steps Pxs ¬Pys
+  where
+
+  helper :
+      (xs ys : List A)
+    → (merge xs ys zs)
+    → (Pxs : All P xs)
+    → (¬Pys : All (¬_ ∘ P) ys)
+    → ∃[ xs ] ∃[ ys ] ( merge xs ys (z ∷ zs) × All P xs × All (¬_ ∘ P) ys )
+  helper xs ys steps Pxs ¬Pys
+    with P? z
+  ...  | yes Pz  =  ⟨ z ∷ xs , ⟨ ys     , ⟨ left-∷  steps , ⟨ Pz ∷ Pxs , ¬Pys ⟩ ⟩ ⟩ ⟩
+  ...  | no ¬Pz  =  ⟨ xs     , ⟨ z ∷ ys , ⟨ right-∷ steps , ⟨ Pxs      , ¬Pz ∷ ¬Pys ⟩ ⟩ ⟩ ⟩
 ```
 
 ## Standard Library
