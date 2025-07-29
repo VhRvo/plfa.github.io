@@ -1288,53 +1288,97 @@ Any-++-⇔ {A} {P} xs ys =
 #### Exercise `All-++-≃` (stretch)
 
 Show that the equivalence `All-++-⇔` can be extended to an isomorphism.
+`Any-++-⇔` cannot be extended to an isomorphism because `Any` only remember one element satisfy the property.
 
 ```agda
+
 All-++-≃ : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
   All P (xs ++ ys) ≃ (All P xs × All P ys)
 All-++-≃ {A} {P} xs ys =
   record
-    { to      = to xs ys
-    ; from    = from xs ys
-    ; from∘to = from∘to xs ys
-    ; to∘from = to∘from xs ys
+    { to      = to xs
+    ; from    = from xs
+    ; from∘to = from∘to xs
+    ; to∘from = to∘from xs
     }
   where
-  to : (xs ys : List A) → All P (xs ++ ys) → (All P xs × All P ys)
-  to xs ys = _⇔_.to (All-++-⇔ xs ys)
+  to : (xs : List A) → All P (xs ++ ys) → (All P xs × All P ys)
+  to xs = _⇔_.to (All-++-⇔ xs ys)
 
-  from : (xs ys : List A) → (All P xs × All P ys) → All P (xs ++ ys)
-  from xs ys = _⇔_.from (All-++-⇔ xs ys)
+  from : (xs : List A) → (All P xs × All P ys) → All P (xs ++ ys)
+  from xs = _⇔_.from (All-++-⇔ xs ys)
 
-  from∘to : (xs ys : List A) → (all : All P (xs ++ ys)) → from xs ys (to xs ys all) ≡ all
-  from∘to []       ys all            = refl
-  from∘to (x ∷ xs) ys (Px ∷ Pxs++ys) =
+  from∘to : (xs : List A) → (all : All P (xs ++ ys)) → from xs (to xs all) ≡ all
+  from∘to []       all            = refl
+  from∘to (x ∷ xs) (Px ∷ Pxs++ys) =
     begin
-      from (x ∷ xs) ys (to (x ∷ xs) ys (Px ∷ Pxs++ys))
+      from (x ∷ xs) (to (x ∷ xs) (Px ∷ Pxs++ys))
     ≡⟨⟩
-    let ⟨ Pxs , Pys ⟩ = to xs ys Pxs++ys
+    let ⟨ Pxs , Pys ⟩ = to xs Pxs++ys
     in
-      from (x ∷ xs) ys ⟨ Px ∷ Pxs , Pys ⟩
+      from (x ∷ xs) ⟨ Px ∷ Pxs , Pys ⟩
     ≡⟨⟩
-      Px ∷ from xs ys (to xs ys Pxs++ys)
-    ≡⟨ cong (Px ∷_) (from∘to xs ys Pxs++ys) ⟩
+      Px ∷ from xs (to xs Pxs++ys)
+    ≡⟨ cong (Px ∷_) (from∘to xs Pxs++ys) ⟩
       Px ∷ Pxs++ys
     ∎
 
-  to∘from : (xs ys : List A) → (all : (All P xs × All P ys)) → to xs ys (from xs ys all) ≡ all
-  to∘from []       ys ⟨ []       , Pys ⟩ = refl
-  to∘from (x ∷ xs) ys ⟨ Px ∷ Pxs , Pys ⟩ =
+  to∘from : (xs : List A) → (all : (All P xs × All P ys)) → to xs (from xs all) ≡ all
+  to∘from []       ⟨ []       , Pys ⟩ = refl
+  to∘from (x ∷ xs) ⟨ Px ∷ Pxs , Pys ⟩ =
     begin
-      to (x ∷ xs) ys (from (x ∷ xs) ys ⟨ Px ∷ Pxs , Pys ⟩)
+      to (x ∷ xs) (from (x ∷ xs) ⟨ Px ∷ Pxs , Pys ⟩)
     ≡⟨⟩
-      to (x ∷ xs) ys (Px ∷ from xs ys ⟨ Pxs , Pys ⟩)
+      to (x ∷ xs) (Px ∷ from xs ⟨ Pxs , Pys ⟩)
     ≡⟨⟩
-    let ⟨ Pxs′ , Pys′ ⟩  = to xs ys (from xs ys ⟨ Pxs , Pys ⟩)
+    let ⟨ Pxs′ , Pys′ ⟩ = to xs (from xs ⟨ Pxs , Pys ⟩)
+    -- Pxs′ = to xs (from xs ⟨ Pxs , Pys ⟩).proj₁
+    -- Pys′ = to xs (from xs ⟨ Pxs , Pys ⟩).proj₂
     in
       ⟨ Px ∷ Pxs′ , Pys′ ⟩
-    ≡⟨ cong (λ e → ⟨ Px ∷ proj₁ e , proj₂ e ⟩ ) (to∘from xs ys ⟨ Pxs , Pys ⟩) ⟩
-      ⟨ Px ∷ Pxs ,  Pys ⟩
+    ≡⟨ cong (λ e → ⟨ Px ∷ proj₁ e , proj₂ e ⟩ ) (to∘from xs ⟨ Pxs , Pys ⟩) ⟩
+      ⟨ Px ∷ Pxs  ,  Pys ⟩
     ∎
+
+  to∘from′ : (xs : List A) → (all : (All P xs × All P ys)) → to xs (from xs all) ≡ all
+  to∘from′ []       ⟨ []       , Pys ⟩ = refl
+  to∘from′ (x ∷ xs) ⟨ Px ∷ Pxs , Pys ⟩ =
+    begin
+      to (x ∷ xs) (from (x ∷ xs) ⟨ Px ∷ Pxs , Pys ⟩)
+    ≡⟨⟩
+      to (x ∷ xs) (Px ∷ from xs ⟨ Pxs , Pys ⟩)
+    ≡⟨ helper (to xs (from xs ⟨ Pxs , Pys ⟩)) refl ⟩
+      ⟨ Px ∷ Pxs  ,  Pys ⟩
+    ∎
+    where
+
+    helper :
+        (Pxs,Pys : (All P xs × All P ys))
+      → (Pxs,Pys ≡ to xs (from xs ⟨ Pxs , Pys ⟩))
+      → to (x ∷ xs) (Px ∷ from xs ⟨ Pxs , Pys ⟩) ≡ ⟨ Px ∷ Pxs  ,  Pys ⟩
+    helper ⟨ Pxs′ , Pys′ ⟩ refl =
+      -- Pxs′ = to xs (from xs ⟨ Pxs , Pys ⟩).proj₁
+      -- Pys′ = to xs (from xs ⟨ Pxs , Pys ⟩).proj₂
+      begin
+        to (x ∷ xs) (Px ∷ from xs ⟨ Pxs , Pys ⟩)
+      ≡⟨⟩
+        ⟨ Px ∷ Pxs′ , Pys′ ⟩
+      ≡⟨ cong (λ e → ⟨ Px ∷ proj₁ e , proj₂ e ⟩ ) (to∘from′ xs ⟨ Pxs , Pys ⟩) ⟩
+        ⟨ Px ∷ Pxs  ,  Pys ⟩
+      ∎
+
+    -- bad : to (x ∷ xs) (Px ∷ from xs ⟨ Pxs , Pys ⟩) ≡ ⟨ Px ∷ Pxs  ,  Pys ⟩
+    -- bad with to xs (from xs ⟨ Pxs , Pys ⟩)
+    -- ...    | ⟨ Pxs′ , Pys′ ⟩ =
+    --   begin
+    --     to (x ∷ xs) (Px ∷ from xs ⟨ Pxs , Pys ⟩)
+    --   ≡⟨⟩
+    --     Pxs′ != to xs (from xs ⟨ Pxs , Pys ⟩) .proj₁
+    --     of type All P xs
+    --     ⟨ Px ∷ Pxs′ , Pys′ ⟩
+    --   ≡⟨ cong (λ e → ⟨ Px ∷ proj₁ e , proj₂ e ⟩ ) (to∘from′ xs ⟨ Pxs , Pys ⟩) ⟩
+    --     ⟨ Px ∷ Pxs  ,  Pys ⟩
+    --   ∎
 ```
 
 #### Exercise `¬Any⇔All¬` (recommended)
