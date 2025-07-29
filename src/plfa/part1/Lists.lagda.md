@@ -1221,7 +1221,7 @@ only if it holds for every element of both lists:
 ```agda
 All-++-⇔ : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
   All P (xs ++ ys) ⇔ (All P xs × All P ys)
-All-++-⇔ xs ys =
+All-++-⇔ {A} {P} xs ys =
   record
     { to    =  to xs ys
     ; from  =  from xs ys
@@ -1234,6 +1234,27 @@ All-++-⇔ xs ys =
   to (x ∷ xs) ys (Px ∷ Pxs++ys)
     with to xs ys Pxs++ys
   ...  | ⟨ Pxs , Pys ⟩ = ⟨ Px ∷ Pxs , Pys ⟩
+
+  helper1 : (x : A) (xs ys : List A) (Px : P x) (Pxs++ys : All P (xs ++ ys))
+      (Pxs : All P xs ) (Pys : All P ys)
+    → (⟨ Pxs , Pys ⟩ ≡ to xs ys Pxs++ys)
+    → (to (x ∷ xs) ys (Px ∷ Pxs++ys)) ≡ ⟨ Px ∷ proj₁ (to xs ys Pxs++ys) , proj₂ (to xs ys Pxs++ys) ⟩
+  helper1 x xs ys Px Pxs++ys
+    Pxs Pys eq
+    = {!   !}
+
+  helper : (x : A) (xs ys : List A) (Px : P x) (Pxs++ys : All P (xs ++ ys)) (Pxs : All P xs ) (Pys : All P ys)
+    → (⟨ Pxs , Pys ⟩ ≡ to xs ys Pxs++ys)
+    → (to (x ∷ xs) ys (Px ∷ Pxs++ys)) ≡ ⟨ Px ∷ Pxs , Pys ⟩
+  helper x xs ys Px Pxs++ys Pxs Pys refl = refl -- {! refl  !}
+    -- begin
+    --   from (x ∷ xs) ys (to (x ∷ xs) ys (Px ∷ Pxs++ys))
+    -- ≡⟨⟩
+    --   from (x ∷ xs) ys ⟨ Px ∷ Pxs , Pys ⟩
+    -- ≡⟨⟩
+    --   Px ∷ from xs ys ⟨ Pxs , Pys ⟩
+    -- ∎
+
 
   from : ∀ { A : Set} {P : A → Set} (xs ys : List A) →
     All P xs × All P ys → All P (xs ++ ys)
@@ -1306,33 +1327,36 @@ All-++-≃ {A} {P} xs ys =
   from : (xs ys : List A) → (All P xs × All P ys) → All P (xs ++ ys)
   from xs ys = _⇔_.from (All-++-⇔ xs ys)
 
-  helper : (x : A) (xs ys : List A) (Px : P x) (Pxs++ys : All P (xs ++ ys)) (Pxs×Pys : All P xs × All P ys)
-    -- → (to xs ys Pxs++ys ≡ Pxs×Pys)
-    → (Pxs×Pys ≡ to xs ys Pxs++ys)
-    → from (x ∷ xs) ys (to (x ∷ xs) ys (Px ∷ Pxs++ys)) ≡ Px ∷ from xs ys Pxs×Pys
-  helper x xs ys Px Pxs++ys ⟨ Pxs , Pys ⟩ refl = -- {!   !}
-    begin
-      from (x ∷ xs) ys (to (x ∷ xs) ys (Px ∷ Pxs++ys))
-    ≡⟨⟩
-      from (x ∷ xs) ys ⟨ Px ∷ Pxs , Pys ⟩
-    ≡⟨⟩
-      Px ∷ from xs ys ⟨ Pxs , Pys ⟩
-    ∎
-
   from∘to : (xs ys : List A) → (all : All P (xs ++ ys)) → from xs ys (to xs ys all) ≡ all
   from∘to []       ys all            = refl
   from∘to (x ∷ xs) ys (Px ∷ Pxs++ys) =
     begin
       from (x ∷ xs) ys (to (x ∷ xs) ys (Px ∷ Pxs++ys))
-    ≡⟨⟩
-      from (x ∷ xs) ys (⟨ Px ∷ proj₁ (to xs ys Pxs++ys) , proj₂ (to xs ys Pxs++ys) ⟩)
-    ≡⟨⟩
-      Px ∷ from xs ys (⟨ proj₁ (to xs ys Pxs++ys) , proj₂ (to xs ys Pxs++ys) ⟩)
-    ≡⟨⟩
+    ≡⟨ helper2 x xs ys Px Pxs++ys (to xs ys Pxs++ys) refl  ⟩
       Px ∷ from xs ys (to xs ys Pxs++ys)
     ≡⟨ cong (Px ∷_) (from∘to xs ys Pxs++ys) ⟩
       Px ∷ Pxs++ys
     ∎
+    where
+
+    helper1 : {x : A} {xs ys : List A}
+        (Px : P x) (Pxs++ys : All P (xs ++ ys)) (Pxs,Pys : All P xs × All P ys)
+      → (Pxs,Pys ≡ to xs ys Pxs++ys)
+      → to (x ∷ xs) ys (Px ∷ Pxs++ys) ≡ ⟨ Px ∷ proj₁ Pxs,Pys , proj₂ Pxs,Pys ⟩
+    helper1 Px Pxs++ys ⟨ Pxs , Pys ⟩ refl = refl
+
+    helper2 : (x : A) (xs ys : List A)
+        (Px : P x) (Pxs++ys : All P (xs ++ ys)) (Pxs,Pys : All P xs × All P ys)
+      → (Pxs,Pys ≡ to xs ys Pxs++ys)
+      → from (x ∷ xs) ys (to (x ∷ xs) ys (Px ∷ Pxs++ys)) ≡ Px ∷ from xs ys Pxs,Pys
+    helper2 x xs ys Px Pxs++ys ⟨ Pxs , Pys ⟩ refl =
+      begin
+        from (x ∷ xs) ys (to (x ∷ xs) ys (Px ∷ Pxs++ys))
+      ≡⟨ cong (from (x ∷ xs) ys) (helper1 Px Pxs++ys ⟨ Pxs , Pys ⟩ refl) ⟩
+        from (x ∷ xs) ys ⟨ Px ∷ Pxs , Pys ⟩
+      ≡⟨⟩
+        Px ∷ from xs ys ⟨ Pxs , Pys ⟩
+      ∎
 
   to∘from : (xs ys : List A) → (all : (All P xs × All P ys)) → to xs ys (from xs ys all) ≡ all
   to∘from []       ys ⟨ []       , Pys ⟩ = refl
@@ -1342,7 +1366,9 @@ All-++-≃ {A} {P} xs ys =
     ≡⟨⟩
       to (x ∷ xs) ys (Px ∷ from xs ys ⟨ Pxs , Pys ⟩)
     ≡⟨⟩
-      ⟨ Px ∷ proj₁ (to xs ys (from xs ys ⟨ Pxs , Pys ⟩)) , proj₂ (to xs ys (from xs ys ⟨ Pxs , Pys ⟩))  ⟩
+    let e = to xs ys (from xs ys ⟨ Pxs , Pys ⟩)
+    in
+      ⟨ Px ∷ proj₁ e , proj₂ e  ⟩
     ≡⟨ cong (λ e → ⟨ Px ∷ proj₁ e , proj₂ e ⟩ ) (to∘from xs ys ⟨ Pxs , Pys ⟩) ⟩
       ⟨ Px ∷ proj₁ ⟨ Pxs , Pys ⟩ , proj₂ ⟨ Pxs , Pys ⟩ ⟩
     ≡⟨⟩
