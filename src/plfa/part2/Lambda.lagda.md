@@ -1749,7 +1749,7 @@ doing so requires types `A` and `B` such that `A ⇒ B ≡ A`:
 
 ```agda
 nope₂ : ∀ {A} → ¬ (∅ ⊢ ƛ "x" ⇒ ` "x" · ` "x" ⦂ A)
-nope₂ (⊢ƛ (⊢` ∋x · ⊢` ∋x′))  = impossible (∋-functional ∋x ∋x′)
+nope₂ {_ ⇒ B} (⊢ƛ (⊢` ∋x · ⊢` {A = A} ∋x′))  =  impossible (∋-functional ∋x ∋x′)
   where
   impossible : ∀ {A B} → ¬ (A ⇒ B ≡ A)
   impossible ()
