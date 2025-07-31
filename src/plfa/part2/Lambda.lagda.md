@@ -191,7 +191,13 @@ two natural numbers.  Your definition may use `plus` as
 defined earlier.
 
 ```agda
--- Your code goes here
+mul : Term
+mul =
+  μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+    case ` "m"
+      [zero⇒ `zero
+      |suc "m" ⇒ plus · (` "n") · (` "*" · ` "m" · ` "n")
+      ]
 ```
 
 
@@ -203,7 +209,10 @@ definition may use `plusᶜ` as defined earlier (or may not
 — there are nice definitions both ways).
 
 ```agda
--- Your code goes here
+mulᶜ : Term
+mulᶜ =
+  ƛ "m" ⇒ ƛ "n" ⇒ ƛ "s" ⇒ ƛ "z" ⇒
+    ` "m" · (` "n" · ` "s") · ` "z"
 ```
 
 
@@ -256,6 +265,20 @@ plus′ = μ′ + ⇒ ƛ′ m ⇒ ƛ′ n ⇒
   n  =  ` "n"
 ```
 Write out the definition of multiplication in the same style.
+
+```agda
+mul′ : Term
+mul′ =
+  μ′ * ⇒ ƛ′ m ⇒ ƛ′ n ⇒
+    case′ m
+      [zero⇒ `zero
+      |suc m ⇒ plus′ · n · (* · m · n)
+      ]
+  where
+  * = ` "*"
+  m = ` "m"
+  n = ` "n"
+```
 
 
 ### Formal vs informal
@@ -527,6 +550,12 @@ What is the result of the following substitution?
 3. `` (ƛ "y" ⇒ `zero · (ƛ "x" ⇒ ` "x")) ``
 4. `` (ƛ "y" ⇒ `zero · (ƛ "x" ⇒ `zero)) ``
 
+```agda
+_ : (ƛ "y" ⇒ ` "x" · (ƛ "x" ⇒ ` "x")) [ "x" := `zero ]
+      ≡ (ƛ "y" ⇒ `zero · (ƛ "x" ⇒ ` "x"))
+_ = refl
+```
+
 
 #### Exercise `_[_:=_]′` (stretch)
 
@@ -537,7 +566,29 @@ clauses into a single function, defined by mutual recursion with
 substitution.
 
 ```agda
--- Your code goes here
+push : Id → Term → Id → Term → Term
+_[_:=_]′ : Term → Id → Term → Term
+
+push x N y V
+  with x ≟ y
+...  | yes _ = N
+...  | no  _ = N [ y := V ]′
+
+(` x) [ y := V ]′
+  with x ≟ y
+... | yes _           = V
+... | no  _           = ` x
+(ƛ x ⇒ N) [ y := V ]′ = ƛ x ⇒ push x N y V
+(L · M) [ y := V ]′   = L [ y := V ]′ · M [ y := V ]′
+`zero [ y := V ]′     = `zero
+(`suc M) [ y := V ]′  = `suc (M [ y := V ]′)
+case L [zero⇒ M |suc x ⇒ N ] [ y := V ]′ =
+  case L [ y := V ]
+    [zero⇒ M [ y := V ]′
+    |suc x ⇒ push x N y V
+    ]
+(μ x ⇒ N) [ y := V ]′ =
+  μ x ⇒ push x N y V
 ```
 
 
@@ -666,6 +717,24 @@ What does the following term step to?
 2.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") ``
 3.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") ``
 
+```agda
+_ : (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x")
+      —→ (ƛ "x" ⇒ ` "x")
+_ = β-ƛ V-ƛ
+
+_ : (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x")
+      —→ (ƛ "x" ⇒ ` "x")
+_ = β-ƛ {"x"} {` "x"} {(ƛ "x" ⇒ ` "x")} (V-ƛ {"x"} {` "x"})
+
+_ : (ƛ "y" ⇒ ` "y") · (ƛ "x" ⇒ ` "x")
+      —→ (ƛ "x" ⇒ ` "x")
+_ = β-ƛ {"y"} {` "y"} {(ƛ "x" ⇒ ` "x")} (V-ƛ {"x"} {` "x"})
+
+_ : (ƛ "x" ⇒ ` "x") · (ƛ "y" ⇒ ` "y")
+      —→ (ƛ "y" ⇒ ` "y")
+_ = β-ƛ {"x"} {` "x"} {(ƛ "y" ⇒ ` "y")} (V-ƛ {"y"} {` "y"})
+```
+
 What does the following term step to?
 
     (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x")  —→  ???
@@ -673,6 +742,19 @@ What does the following term step to?
 1.  `` (ƛ "x" ⇒ ` "x") ``
 2.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") ``
 3.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") ``
+
+```agda
+_ : (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x")
+      —→ (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x")
+_ = ξ-·₁ (β-ƛ V-ƛ)
+
+_ : (ƛ "x" ⇒ ` "x") · (ƛ "y" ⇒ ` "y") · (ƛ "z" ⇒ ` "z")
+      —→ (ƛ "y" ⇒ ` "y") · (ƛ "z" ⇒ ` "z")
+_ =
+  ξ-·₁ {(ƛ "x" ⇒ ` "x") · (ƛ "y" ⇒ ` "y")} {(ƛ "y" ⇒ ` "y")} {(ƛ "z" ⇒ ` "z")}
+    (β-ƛ {"x"} {` "x"} {ƛ "y" ⇒ ` "y"}
+      (V-ƛ {"y"} {` "y"} ))
+```
 
 What does the following term step to?  (Where `twoᶜ` and `sucᶜ` are as
 defined above.)
@@ -682,6 +764,23 @@ defined above.)
 1.  `` sucᶜ · (sucᶜ · `zero) ``
 2.  `` (ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")) · `zero ``
 3.  `` `zero ``
+
+twoᶜ : Term
+twoᶜ =  ƛ "s" ⇒ ƛ "z" ⇒ ` "s" · (` "s" · ` "z")
+
+sucᶜ : Term
+sucᶜ = ƛ "n" ⇒ `suc (` "n")
+
+```agda
+_ : twoᶜ · sucᶜ · `zero —→ (ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")) · `zero
+_ = ξ-·₁ (β-ƛ V-ƛ)
+
+_ : twoᶜ · sucᶜ · `zero —→ (ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")) · `zero
+_ =
+  ξ-·₁ {twoᶜ · sucᶜ} {ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")} {`zero}
+    (β-ƛ {"s"} {ƛ "z" ⇒ ` "s" · (` "s" · ` "z")} {sucᶜ}
+      (V-ƛ {"n"} {`suc (` "n")}))
+```
 
 
 ## Reflexive and transitive closure
@@ -718,6 +817,10 @@ begin_ : ∀ {M N}
     ------
   → M —↠ N
 begin M—↠N = M—↠N
+
+—↠-trans : {L M N : Term} → L —↠ M → M —↠ N → L —↠ N
+—↠-trans {L} (.L ∎)                 L—↠N  =  L—↠N
+—↠-trans {L} (.L —→⟨ L—→M₁ ⟩ M₁—↠M) M—↠N  =  L —→⟨ L—→M₁ ⟩ (—↠-trans  M₁—↠M M—↠N)
 ```
 We can read this as follows:
 
@@ -770,7 +873,45 @@ Show that the first notion of reflexive and transitive closure
 above embeds into the second. Why are they not isomorphic?
 
 ```agda
--- Your code goes here
+import Relation.Binary.PropositionalEquality as Eq
+open Eq using (cong)
+open Eq.≡-Reasoning
+  using (step-≡-∣; step-≡-⟩)
+  renaming (_∎ to _≡-∎; begin_ to ≡-begin_)
+open import plfa.part1.Isomorphism using (_≲_)
+
+—↠≲—↠′ : (L N : Term)
+  → L —↠ N ≲ L —↠′ N
+—↠≲—↠′ L N =
+  record
+    { to = to
+    ; from = from
+    ; from∘to = from∘to
+    }
+  where
+
+  to : {L N : Term} → L —↠ N → L —↠′ N
+  to {L} (.L ∎)                =  refl′
+  to {L} (.L —→⟨ L—→M ⟩ M—↠N)  =  trans′ (step′ L—→M) (to M—↠N)
+
+  from : {L N : Term} → L —↠′ N → L —↠ N
+  from {L} {N} (step′ L—→N)          =  L —→⟨ L—→N ⟩ (N ∎)
+  from {L}     refl′                 =  L ∎
+  from {L}     (trans′ L—↠′M M—↠′N)  =  —↠-trans (from L—↠′M) (from M—↠′N)
+
+  from∘to : {L N : Term} → (L—↠N : L —↠ N) → from (to L—↠N) ≡ L—↠N
+  from∘to {L} (.L ∎)                =  refl
+  from∘to {L} (.L —→⟨ L—→M ⟩ M—↠N)  =
+    ≡-begin
+      from (to (L —→⟨ L—→M ⟩ M—↠N))
+    ≡⟨⟩
+      (L —→⟨ L—→M ⟩ (from (to M—↠N)))
+    ≡⟨ cong (L —→⟨ L—→M ⟩_) (from∘to M—↠N) ⟩
+      (L —→⟨ L—→M ⟩ M—↠N)
+    ≡-∎
+
+  to∘from≢id : {L N : Term} → (L—→N : L —→ N) → to (from (step′ L—→N)) ≢ step′ L—→N
+  to∘from≢id L—→N ()
 ```
 
 ## Confluence
@@ -845,6 +986,31 @@ _ =
   —→⟨ β-ƛ (V-suc V-zero) ⟩
     `suc (`suc `zero)
   ∎
+
+Value[sucᶜ] : Value sucᶜ
+Value[sucᶜ] = V-ƛ {"n"} {`suc (` "n")}
+
+_ : twoᶜ · sucᶜ · `zero —↠ two
+_ =
+  begin
+    twoᶜ · sucᶜ · `zero
+  —→⟨ ξ-·₁ {twoᶜ · sucᶜ} {ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")} {`zero}
+        (β-ƛ {"s"} {ƛ "z" ⇒ ` "s" · (` "s" · ` "z")} {sucᶜ}
+          Value[sucᶜ]) ⟩
+    (ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")) · `zero
+  —→⟨ β-ƛ {"z"} {sucᶜ · (sucᶜ · ` "z")} {`zero}
+        V-zero ⟩
+    sucᶜ · (sucᶜ · `zero)
+  —→⟨ ξ-·₂ {sucᶜ} {sucᶜ · `zero} {`suc `zero}
+        Value[sucᶜ]
+        (β-ƛ {"n"} {`suc (` "n")} {`zero}
+          V-zero) ⟩
+    sucᶜ · `suc `zero
+  —→⟨ β-ƛ {"n"} {`suc (` "n")} {`suc `zero}
+        (V-suc {`zero}
+          V-zero) ⟩
+    `suc (`suc `zero)
+  ∎
 ```
 
 Here is a sample reduction demonstrating that two plus two is four:
@@ -890,6 +1056,74 @@ _ =
   —→⟨ ξ-suc (ξ-suc β-zero) ⟩
     `suc (`suc (`suc (`suc `zero)))
   ∎
+
+one : Term
+one = `suc `zero
+
+Value[zero] : Value `zero
+Value[zero] = V-zero
+
+Value[one] : Value one
+Value[one] =
+  V-suc {`zero} V-zero
+
+Value[two] : Value two
+Value[two] =
+  V-suc {one} Value[one]
+
+Value[twoᶜ] : Value twoᶜ
+Value[twoᶜ] = V-ƛ {"s"} {ƛ "z" ⇒ ` "s" · (` "s" · ` "z")}
+
+three : Term
+three = `suc two
+
+Value[three] : Value three
+Value[three] = V-suc {two} Value[two]
+
+four : Term
+four = `suc three
+
+_ : plus · two · two —↠ four
+_ =
+  begin
+    plus · two · two
+  —→⟨ ξ-·₁ (ξ-·₁ β-μ) ⟩
+    (ƛ "m" ⇒ ƛ "n" ⇒
+      case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+        · two · two
+  —→⟨ ξ-·₁ (β-ƛ Value[two]) ⟩
+    (ƛ "n" ⇒
+      case two [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+         · two
+  —→⟨ β-ƛ Value[two] ⟩
+    case two [zero⇒ two |suc "m" ⇒ `suc (plus · ` "m" · two) ]
+  —→⟨ β-suc Value[one] ⟩
+    `suc (plus · one · two)
+  —→⟨ ξ-suc (ξ-·₁ (ξ-·₁ β-μ)) ⟩
+    `suc ((ƛ "m" ⇒ ƛ "n" ⇒
+      case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+        · one · two)
+  —→⟨ ξ-suc (ξ-·₁ (β-ƛ Value[one])) ⟩
+    `suc ((ƛ "n" ⇒
+      case `suc `zero [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+        · two)
+  —→⟨ ξ-suc (β-ƛ Value[two]) ⟩
+    `suc (case one [zero⇒ two |suc "m" ⇒ `suc (plus · ` "m" · two) ])
+  —→⟨ ξ-suc (β-suc Value[zero]) ⟩
+    `suc (`suc (plus · `zero · two))
+  —→⟨ ξ-suc (ξ-suc (ξ-·₁ (ξ-·₁ β-μ))) ⟩
+    `suc (`suc ((ƛ "m" ⇒ ƛ "n" ⇒
+      case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+        · `zero · two))
+  —→⟨ ξ-suc (ξ-suc (ξ-·₁ (β-ƛ Value[zero]))) ⟩
+    `suc (`suc ((ƛ "n" ⇒
+      case `zero [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+        · two))
+  —→⟨ ξ-suc (ξ-suc (β-ƛ Value[two])) ⟩
+    `suc (`suc (case `zero [zero⇒ two |suc "m" ⇒ `suc (plus · ` "m" · two) ]))
+  —→⟨ ξ-suc (ξ-suc β-zero) ⟩
+    `suc (`suc (`suc (`suc `zero)))
+  ∎
 ```
 
 And here is a similar sample reduction for Church numerals:
@@ -925,6 +1159,41 @@ _ =
   —→⟨ β-ƛ (V-suc (V-suc (V-suc V-zero))) ⟩
    `suc (`suc (`suc (`suc `zero)))
   ∎
+
+_ : plusᶜ · twoᶜ · twoᶜ · sucᶜ · `zero —↠ four
+_ =
+  begin
+    (ƛ "m" ⇒ ƛ "n" ⇒ ƛ "s" ⇒ ƛ "z" ⇒ ` "m" · ` "s" · (` "n" · ` "s" · ` "z"))
+      · twoᶜ · twoᶜ · sucᶜ · `zero
+  —→⟨ ξ-·₁ (ξ-·₁ (ξ-·₁ (β-ƛ Value[twoᶜ]))) ⟩
+    (ƛ "n" ⇒ ƛ "s" ⇒ ƛ "z" ⇒ twoᶜ · ` "s" · (` "n" · ` "s" · ` "z"))
+      · twoᶜ · sucᶜ · `zero
+  —→⟨ ξ-·₁ (ξ-·₁ (β-ƛ Value[twoᶜ])) ⟩
+    (ƛ "s" ⇒ ƛ "z" ⇒ twoᶜ · ` "s" · (twoᶜ · ` "s" · ` "z")) · sucᶜ · `zero
+  —→⟨ ξ-·₁ (β-ƛ Value[sucᶜ]) ⟩
+    (ƛ "z" ⇒ twoᶜ · sucᶜ · (twoᶜ · sucᶜ · ` "z")) · `zero
+  —→⟨ β-ƛ Value[zero] ⟩
+    twoᶜ · sucᶜ · (twoᶜ · sucᶜ · `zero)
+  —→⟨ ξ-·₁ (β-ƛ Value[sucᶜ]) ⟩
+  let sucᶜ∘sucᶜ = (ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z"))
+      Value[sucᶜ∘sucᶜ] = V-ƛ {"z"} {sucᶜ · (sucᶜ · ` "z")}
+  in
+    sucᶜ∘sucᶜ · (twoᶜ · sucᶜ · `zero)
+  —→⟨ ξ-·₂ Value[sucᶜ∘sucᶜ] (ξ-·₁ (β-ƛ Value[sucᶜ])) ⟩
+    sucᶜ∘sucᶜ · ((ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")) · `zero)
+  —→⟨ ξ-·₂ Value[sucᶜ∘sucᶜ] (β-ƛ Value[zero]) ⟩
+    sucᶜ∘sucᶜ · (sucᶜ · (sucᶜ · `zero))
+  —→⟨ ξ-·₂ Value[sucᶜ∘sucᶜ] (ξ-·₂ Value[sucᶜ] (β-ƛ Value[zero])) ⟩
+    sucᶜ∘sucᶜ · (sucᶜ · one)
+  —→⟨ ξ-·₂ Value[sucᶜ∘sucᶜ] (β-ƛ Value[one]) ⟩
+    sucᶜ∘sucᶜ · two
+  —→⟨ β-ƛ Value[two] ⟩
+    sucᶜ · (sucᶜ · two)
+  —→⟨ ξ-·₂ Value[sucᶜ] (β-ƛ Value[two]) ⟩
+    sucᶜ · three
+  —→⟨ β-ƛ Value[three] ⟩
+   `suc (`suc (`suc (`suc `zero)))
+  ∎
 ```
 
 In the next chapter, we will see how to compute such reduction sequences.
@@ -935,7 +1204,35 @@ In the next chapter, we will see how to compute such reduction sequences.
 Write out the reduction sequence demonstrating that one plus one is two.
 
 ```agda
--- Your code goes here
+_ : plus · one · one —↠ two
+_ =
+  begin
+    plus · one · one
+  —→⟨ ξ-·₁ (ξ-·₁ β-μ) ⟩
+    ((ƛ "m" ⇒ ƛ "n" ⇒
+      case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ]))
+        · one · one
+  —→⟨ ξ-·₁ (β-ƛ Value[one]) ⟩
+    (ƛ "n" ⇒
+      case one [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+        · one
+  —→⟨ β-ƛ Value[one] ⟩
+    case one [zero⇒ one |suc "m" ⇒ `suc (plus · ` "m" · one) ]
+  —→⟨ β-suc Value[zero] ⟩
+    `suc (plus · `zero · one)
+  —→⟨ ξ-suc (ξ-·₁ (ξ-·₁ β-μ)) ⟩
+    `suc ((ƛ "m" ⇒ ƛ "n" ⇒
+      case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+        · `zero · one)
+  —→⟨ ξ-suc (ξ-·₁ (β-ƛ Value[zero])) ⟩
+    `suc ((ƛ "n" ⇒
+      case `zero [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+        · one)
+  —→⟨ ξ-suc (β-ƛ Value[one]) ⟩
+    `suc (case `zero [zero⇒ one |suc "m" ⇒ `suc (plus · ` "m" · one) ])
+  —→⟨ ξ-suc β-zero ⟩
+    `suc one
+  ∎
 ```
 
 
@@ -1043,7 +1340,50 @@ to the list
     [ ⟨ "z" , `ℕ ⟩ , ⟨ "s" , `ℕ ⇒ `ℕ ⟩ ]
 
 ```agda
--- Your code goes here
+open import plfa.part1.Isomorphism using (_≃_)
+open import Data.Product.Base using (_,_)
+
+Context-≃ : Context ≃ List (Id × Type)
+Context-≃ =
+  record
+    { to      = to
+    ; from    = from
+    ; from∘to = from∘to
+    ; to∘from = to∘from
+    }
+  where
+
+  to : Context → List (Id × Type)
+  to ∅ = []
+  to (context , id ⦂ type) = (id , type) ∷ to context
+
+  from : List (Id × Type) → Context
+  from [] = ∅
+  from ((id , type) ∷ list) = from list , id ⦂ type
+
+  from∘to : (context : Context) → from (to context) ≡ context
+  from∘to ∅ = refl
+  from∘to (context , id ⦂ type) =
+    ≡-begin
+      from (to (context , id ⦂ type))
+    ≡⟨⟩
+      from ((id , type) ∷ to context)
+    ≡⟨⟩
+      from (to context) , id ⦂ type
+    ≡⟨ cong (_, id ⦂ type) (from∘to context) ⟩
+      context , id ⦂ type
+    ≡-∎
+
+  to∘from : (list : List (Id × Type)) → to (from list) ≡ list
+  to∘from [] = refl
+  to∘from ((id , type) ∷ list) =
+    ≡-begin
+      to (from ((id , type) ∷ list))
+    ≡⟨⟩
+      (id , type) ∷ to (from list)
+    ≡⟨ cong ((id , type) ∷_) (to∘from list) ⟩
+      ( id , type ) ∷ list
+    ≡-∎
 ```
 
 ### Lookup judgment
@@ -1239,11 +1579,22 @@ Here is the above typing derivation formalised in Agda:
 Ch : Type → Type
 Ch A = (A ⇒ A) ⇒ A ⇒ A
 
+-- twoᶜ : Term
+-- twoᶜ =  ƛ "s" ⇒ ƛ "z" ⇒ ` "s" · (` "s" · ` "z")
+
 ⊢twoᶜ : ∀ {Γ A} → Γ ⊢ twoᶜ ⦂ Ch A
-⊢twoᶜ = ⊢ƛ (⊢ƛ (⊢` ∋s · (⊢` ∋s · ⊢` ∋z)))
+⊢twoᶜ {Γ} {A} =
+  ⊢ƛ {Γ} {"s"} {ƛ "z" ⇒ ` "s" · (` "s" · ` "z")}
+    (⊢ƛ {Γ , "s" ⦂ A ⇒ A} {"z"} {` "s" · (` "s" · ` "z")}
+      (⊢` ∋s · (⊢` ∋s · ⊢` ∋z)))
   where
-  ∋s = S′ Z
-  ∋z = Z
+  ∋s : (Γ , "s" ⦂ A ⇒ A , "z" ⦂ A) ∋ "s" ⦂ A ⇒ A
+  ∋s = S′ ∋s′
+    where
+    ∋s′ : (Γ , "s" ⦂ A ⇒ A) ∋ "s" ⦂ A ⇒ A
+    ∋s′ = Z {Γ} {"s"} {A ⇒ A}
+  ∋z : (Γ , "s" ⦂ A ⇒ A , "z" ⦂ A) ∋ "z" ⦂ A
+  ∋z = Z {Γ , "s" ⦂ A ⇒ A} {"z"} {A}
 ```
 
 Here are the typings corresponding to computing two plus two:
@@ -1251,15 +1602,33 @@ Here are the typings corresponding to computing two plus two:
 ⊢two : ∀ {Γ} → Γ ⊢ two ⦂ `ℕ
 ⊢two = ⊢suc (⊢suc ⊢zero)
 
+-- plus : Term
+-- plus = μ "+" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+--          case ` "m"
+--            [zero⇒ ` "n"
+--            |suc "m" ⇒ `suc (` "+" · ` "m" · ` "n") ]
+
 ⊢plus : ∀ {Γ} → Γ ⊢ plus ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ
-⊢plus = ⊢μ (⊢ƛ (⊢ƛ (⊢case (⊢` ∋m) (⊢` ∋n)
-         (⊢suc (⊢` ∋+ · ⊢` ∋m′ · ⊢` ∋n′)))))
+⊢plus {Γ} =
+  ⊢μ (⊢ƛ (⊢ƛ
+    (⊢case
+      (⊢` ∋m)
+      (⊢` ∋n)
+      (⊢suc ∋m+n))))
   where
-  ∋+  = S′ (S′ (S′ Z))
+  ∋m : Γ , "+" ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ , "m" ⦂ `ℕ , "n" ⦂ `ℕ ∋ "m" ⦂ `ℕ
   ∋m  = S′ Z
+  ∋n : Γ , "+" ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ , "m" ⦂ `ℕ , "n" ⦂ `ℕ ∋ "n" ⦂ `ℕ
   ∋n  = Z
-  ∋m′ = Z
-  ∋n′ = S′ Z
+  ∋m+n : Γ , "+" ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ , "m" ⦂ `ℕ , "n" ⦂ `ℕ , "m" ⦂ `ℕ ⊢ (` "+" · ` "m" · ` "n") ⦂ `ℕ
+  ∋m+n = ⊢` ∋+ · ⊢` ∋m′ · ⊢` ∋n′
+    where
+    ∋+ : Γ , "+" ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ , "m" ⦂ `ℕ , "n" ⦂ `ℕ , "m" ⦂ `ℕ ∋ "+" ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ
+    ∋+  = S′ (S′ (S′ Z))
+    ∋m′ : Γ , "+" ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ , "m" ⦂ `ℕ , "n" ⦂ `ℕ , "m" ⦂ `ℕ ∋ "m" ⦂ `ℕ
+    ∋m′ = Z
+    ∋n′ : Γ , "+" ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ , "m" ⦂ `ℕ , "n" ⦂ `ℕ , "m" ⦂ `ℕ ∋ "n" ⦂ `ℕ
+    ∋n′ = S′ Z
 
 ⊢2+2 : ∅ ⊢ plus · two · two ⦂ `ℕ
 ⊢2+2 = ⊢plus · ⊢two · ⊢two
@@ -1275,6 +1644,10 @@ the second after `"m"` is bound in the successor branch of the case.
 
 And here are typings for the remainder of the Church example:
 ```agda
+-- plusᶜ : Term
+-- plusᶜ =  ƛ "m" ⇒ ƛ "n" ⇒ ƛ "s" ⇒ ƛ "z" ⇒
+--          ` "m" · ` "s" · (` "n" · ` "s" · ` "z")
+
 ⊢plusᶜ : ∀ {Γ A} → Γ  ⊢ plusᶜ ⦂ Ch A ⇒ Ch A ⇒ Ch A
 ⊢plusᶜ = ⊢ƛ (⊢ƛ (⊢ƛ (⊢ƛ (⊢` ∋m · ⊢` ∋s · (⊢` ∋n · ⊢` ∋s · ⊢` ∋z)))))
   where
@@ -1284,8 +1657,9 @@ And here are typings for the remainder of the Church example:
   ∋z = Z
 
 ⊢sucᶜ : ∀ {Γ} → Γ ⊢ sucᶜ ⦂ `ℕ ⇒ `ℕ
-⊢sucᶜ = ⊢ƛ (⊢suc (⊢` ∋n))
+⊢sucᶜ {Γ} = ⊢ƛ (⊢suc (⊢` ∋n))
   where
+  ∋n : Γ , "n" ⦂ `ℕ ∋ "n" ⦂ `ℕ
   ∋n = Z
 
 ⊢2+2ᶜ : ∅ ⊢ plusᶜ · twoᶜ · twoᶜ · sucᶜ · `zero ⦂ `ℕ
@@ -1342,10 +1716,15 @@ The lookup relation `Γ ∋ x ⦂ A` is functional, in that for each `Γ` and `x
 there is at most one `A` such that the judgment holds:
 ```agda
 ∋-functional : ∀ {Γ x A B} → Γ ∋ x ⦂ A → Γ ∋ x ⦂ B → A ≡ B
-∋-functional Z        Z          =  refl
-∋-functional Z        (S x≢ _)   =  contradiction refl x≢
-∋-functional (S x≢ _) Z          =  contradiction refl x≢
-∋-functional (S _ ∋x) (S _ ∋x′)  =  ∋-functional ∋x ∋x′
+∋-functional {Γ , x ⦂ A} (Z {.Γ} {.x} {.A})              (Z {.Γ} {.x} {.A})                =  refl
+∋-functional {Γ , x ⦂ A} (Z {.Γ} {.x} {.A})              (S x≢x _)                         =  contradiction refl x≢x
+∋-functional {Γ , x ⦂ A} (S x≢x _)                       (Z {.Γ} {.x} {.A})                =  contradiction refl x≢x
+∋-functional {Γ , y ⦂ X} (S {Γ} {x} {.y} {A} {.X} _ ∋x)  (S {Γ} {.x} {.y} {B} {.X} _ ∋x′)  =  ∋-functional {Γ} {x} {A} {B} ∋x ∋x′
+
+-- ∋-functional Z        Z          =  refl
+-- ∋-functional Z        (S x≢ _)   =  contradiction refl x≢
+-- ∋-functional (S x≢ _) Z          =  contradiction refl x≢
+-- ∋-functional (S _ ∋x) (S _ ∋x′)  =  ∋-functional ∋x ∋x′
 ```
 
 The typing relation `Γ ⊢ M ⦂ A` is not functional. For example, in any `Γ`
@@ -1376,6 +1755,28 @@ nope₂ (⊢ƛ (⊢` ∋x · ⊢` ∋x′))  = impossible (∋-functional ∋x �
   impossible ()
 ```
 
+Here are manual proof terms.
+
+```agda
+open import Relation.Binary.PropositionalEquality using (subst)
+open import Data.Product.Base using (proj₁)
+open import Data.Empty using (⊥)
+
+⇒inj′ : {A B A′ B′ : Type} → A ⇒ B ≡ A′ ⇒ B′ → A ≡ A′ × B ≡ B′
+⇒inj′ refl = refl , refl
+
+⇒inj : {A B A′ B′ : Type} → A ⇒ B ≡ A′ ⇒ B′ → A ≡ A′ × B ≡ B′
+⇒inj {A} {B} eq = subst motive eq (refl , refl)
+  where
+    motive : Type → Set
+    motive `ℕ = ⊥
+    motive (X ⇒ Y) = A ≡ X × B ≡ Y
+
+impossible : {A B : Type} → ¬ (A ⇒ B ≡ A)
+impossible {A ⇒ X} {B} eq = impossible (proj₁ (⇒inj eq))
+impossible {`ℕ} ()
+```
+
 
 #### Quiz
 
@@ -1399,7 +1800,22 @@ Using the term `mul` you defined earlier, write out the derivation
 showing that it is well typed.
 
 ```agda
--- Your code goes here
+-- mul : Term
+-- mul =
+--   μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+--     case ` "m"
+--       [zero⇒ `zero
+--       |suc "m" ⇒ plus · (` "n") · (` "*" · ` "m" · ` "n")
+--       ]
+⊢mul : ∀ {Γ} → Γ ⊢ mul ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ
+⊢mul = ⊢μ (⊢ƛ (⊢ƛ (⊢case (⊢` ∋m) ⊢zero ∋plus)))
+  where
+    ∋m = S′ Z
+    ∋plus = ⊢plus · ⊢` ∋n′ · ((⊢` ∋* · ⊢` ∋m′) · ⊢` ∋n′)
+      where
+        ∋* = S′ (S′ (S′ Z))
+        ∋m′ = Z
+        ∋n′ = S′ Z
 ```
 
 
@@ -1409,7 +1825,18 @@ Using the term `mulᶜ` you defined earlier, write out the derivation
 showing that it is well typed.
 
 ```agda
--- Your code goes here
+-- mulᶜ : Term
+-- mulᶜ =
+--   ƛ "m" ⇒ ƛ "n" ⇒ ƛ "s" ⇒ ƛ "z" ⇒
+--     ` "m" · (` "n" · ` "s") · ` "z"
+⊢mulᶜ : ∀ {Γ A} → Γ  ⊢ mulᶜ ⦂ Ch A ⇒ Ch A ⇒ Ch A
+⊢mulᶜ =
+  ⊢ƛ (⊢ƛ (⊢ƛ (⊢ƛ ((⊢` ∋m) · ((⊢` ∋n) · ⊢` ∋s) · ⊢` ∋z))))
+  where
+    ∋m = S′ (S′ (S′ Z))
+    ∋n = S′ (S′ Z)
+    ∋s = S′ Z
+    ∋z = Z
 ```
 
 
@@ -1430,7 +1857,7 @@ This chapter uses the following unicode:
     ∋  U+220B  CONTAINS AS MEMBER (\ni)
     ∅  U+2205  EMPTY SET (\0)
     ⊢  U+22A2  RIGHT TACK (\vdash or \|-)
-    ⦂  U+2982  Z NOTATION TYPE COLON (\:)
+    ⦂  U+2982  Z NOTATION TYPE COLON (\z:)
     😇  U+1F607  SMILING FACE WITH HALO
     😈  U+1F608  SMILING FACE WITH HORNS
 

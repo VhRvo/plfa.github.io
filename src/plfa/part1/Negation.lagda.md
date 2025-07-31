@@ -259,8 +259,6 @@ Do we also have the following?
     ¬ (A × B) ≃ (¬ A) ⊎ (¬ B)
 
 ```agda
-open import plfa.part1.Isomorphism using (_≲_)
-
 ×-weak-⊎ : {A B : Set} → (¬ A) ⊎ (¬ B) → ¬ (A × B)
 ×-weak-⊎ (inj₁ ¬a) ⟨ a , _ ⟩  =  ¬a a
 ×-weak-⊎ (inj₂ ¬b) ⟨ _ , b ⟩  =  ¬b b
