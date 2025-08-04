@@ -17,8 +17,11 @@ sequences for us.
 ## Imports
 
 ```agda
-open import Relation.Binary.PropositionalEquality
-  using (_≡_; _≢_; refl; sym; cong; cong₂)
+import Relation.Binary.PropositionalEquality as Eq
+open Eq using (_≡_; _≢_; refl; sym; cong; cong₂)
+open Eq.≡-Reasoning
+  using (step-≡-∣; step-≡-⟩)
+  renaming (_∎ to _≡-∎; begin_ to ≡-begin_)
 open import Data.String using (String; _≟_)
 open import Data.Nat.Base using (ℕ; zero; suc)
 open import Data.Product.Base
@@ -92,9 +95,12 @@ V¬—→ : ∀ {M N}
   → Value M
     ----------
   → ¬ (M —→ N)
-V¬—→ V-ƛ        ()
-V¬—→ V-zero     ()
-V¬—→ (V-suc VM) (ξ-suc M—→N) = V¬—→ VM M—→N
+V¬—→ {ƛ x ⇒ M} V-ƛ          ()
+V¬—→ {`zero}   V-zero       ()
+V¬—→ {`suc M}  (V-suc V[M]) (ξ-suc M—→N) = V¬—→ V[M]  M—→N
+-- V¬—→ V-ƛ        ()
+-- V¬—→ V-zero     ()
+-- V¬—→ (V-suc VM) (ξ-suc M—→N) = V¬—→ VM M—→N
 ```
 We consider the three possibilities for values:
 
@@ -112,7 +118,7 @@ As a corollary, terms that reduce are not values:
   → M —→ N
     ---------
   → ¬ Value M
-—→¬V M—→N VM  =  V¬—→ VM M—→N
+—→¬V M—→N Value[M]  =  V¬—→ Value[M] M—→N
 ```
 If we expand out the negations, we have
 
@@ -156,6 +162,63 @@ that is, the canonical forms are exactly the well-typed values.
 
 ```
 -- Your code goes here
+Canonical-≃ : {V : Term} {A : Type} → Canonical V ⦂ A ≃ (∅ ⊢ V ⦂ A) × (Value V)
+Canonical-≃ {V} {A} =
+  record
+    { to      = to
+    ; from    = from
+    ; from∘to = from∘to
+    ; to∘from = to∘from
+    }
+  where
+
+  to : {V : Term} {A : Type} → Canonical V ⦂ A → (∅ ⊢ V ⦂ A) × (Value V)
+  to {ƛ x ⇒ N} {A} (C-ƛ ⊢N)  =  ⟨ ⊢ƛ ⊢N , V-ƛ ⟩
+  to {`zero}   {A} C-zero    =  ⟨ ⊢zero , V-zero ⟩
+  to {`suc M}  {A} (C-suc C[M])
+    with to C[M]
+  ...  | ⟨ ⊢M , V[M] ⟩  =  ⟨ ⊢suc ⊢M , V-suc V[M] ⟩
+
+  from : {V : Term} {A : Type} → (∅ ⊢ V ⦂ A) × (Value V) → Canonical V ⦂ A
+  from ⟨ ⊢ƛ ⊢N , V-ƛ ⟩           =  C-ƛ ⊢N
+  from ⟨ ⊢zero , V-zero ⟩        =  C-zero
+  from ⟨ ⊢suc ⊢M , V-suc V[M] ⟩  =  C-suc (from ⟨ ⊢M , V[M] ⟩)
+
+  from∘to : {V : Term} {A : Type} → (canonical : Canonical V ⦂ A) → from (to canonical) ≡ canonical
+  from∘to (C-ƛ x)       =  refl
+  from∘to C-zero        =  refl
+  from∘to (C-suc C[M])  =
+    ≡-begin
+      from (to (C-suc C[M]))
+    ≡⟨⟩
+    let ⟨ ⊢M , V[M] ⟩ = to C[M]
+    in
+      from ⟨ ⊢suc ⊢M , V-suc V[M] ⟩
+    ≡⟨⟩
+      C-suc (from ⟨ ⊢M , V[M] ⟩)
+    ≡⟨⟩
+      C-suc (from (to C[M]))
+    ≡⟨ cong C-suc (from∘to C[M]) ⟩
+      C-suc C[M]
+    ≡-∎
+
+  to∘from : {V : Term} {A : Type} → (pair : (∅ ⊢ V ⦂ A) × (Value V)) → to (from pair) ≡ pair
+  to∘from ⟨ ⊢ƛ ⊢N , V-ƛ ⟩ = refl
+  to∘from ⟨ ⊢zero , V-zero ⟩ = refl
+  to∘from ⟨ ⊢suc ⊢M , V-suc V[M] ⟩ =
+    ≡-begin
+      to (from ⟨ ⊢suc ⊢M , V-suc V[M] ⟩)
+    ≡⟨⟩
+      to (C-suc (from ⟨ ⊢M , V[M] ⟩))
+    ≡⟨⟩
+    let ⟨ ⊢M′ , V[M]′ ⟩ = to (from ⟨ ⊢M , V[M] ⟩)
+    in
+      ⟨ ⊢suc ⊢M′ , V-suc V[M]′ ⟩
+    ≡⟨ cong
+        (λ{ ⟨ ⊢M , V[M] ⟩ → ⟨ ⊢suc ⊢M , V-suc V[M] ⟩ })
+        (to∘from ⟨ ⊢M , V[M] ⟩) ⟩
+      ⟨ ⊢suc ⊢M , V-suc V[M] ⟩
+    ≡-∎
 ```
 
 ## Progress
@@ -199,6 +262,120 @@ exists a term `N` such that `M —→ N`, or if it is done, meaning that
 
 If a term is well typed in the empty context then it satisfies progress:
 ```agda
+module VerboseProgress where
+  ¬⊢zero⦂A⇒B : {Γ : Context} {A B : Type} → ¬ ( Γ ⊢ `zero ⦂ A ⇒ B)
+  ¬⊢zero⦂A⇒B ()
+
+  ¬⊢suc⦂A⇒B : {Γ : Context} {M : Term} {A B : Type} → ¬ ( Γ ⊢ `suc M ⦂ A ⇒ B)
+  ¬⊢suc⦂A⇒B ()
+
+  ¬ƛx⇒N⦂ℕ : {Γ : Context} {x : Id} {N : Term} → ¬ ( Γ ⊢ ƛ x ⇒ N ⦂ `ℕ)
+  ¬ƛx⇒N⦂ℕ ()
+
+  progress : ∀ {M A}
+    → ∅ ⊢ M ⦂ A
+      ----------
+    → Progress M
+  progress {` x} (⊢` ())
+  progress {ƛ x ⇒ N} (⊢ƛ ⊢N) = done V-ƛ
+  progress {L · M} (⊢L · ⊢M)
+    with progress ⊢L
+  ...  | step L—→L′         =  step (ξ-·₁ L—→L′)
+  ...  | done V-zero        =  contradiction ⊢L ¬⊢zero⦂A⇒B
+  ...  | done (V-suc V[L])  =  contradiction ⊢L ¬⊢suc⦂A⇒B
+  ...  | done V-ƛ with progress ⊢M
+  ...                | step M—→M′ = step (ξ-·₂ V-ƛ M—→M′)
+  ...                | done V[M]  = step (β-ƛ V[M])
+  progress {`zero}  {`ℕ} ⊢zero = done V-zero
+  progress {`suc M} {`ℕ} (⊢suc ⊢M)
+    with progress ⊢M
+  ...  | done V[M] = done (V-suc V[M])
+  ...  | step M—→N = step (ξ-suc M—→N)
+  progress {case L [zero⇒ M |suc x ⇒ N ]} {A} (⊢case ⊢L ⊢M ⊢N )
+    with progress ⊢L
+  ...  | done V-zero         =  step β-zero
+  ...  | done (V-suc V[L])   =  step (β-suc V[L])
+  ...  | done V-ƛ            =  contradiction ⊢L ¬ƛx⇒N⦂ℕ
+  ...  | step L—→L′          =  step (ξ-case L—→L′)
+  progress {μ x ⇒ N} {A} ⊢N  =  step β-μ
+
+module MoreVerboseProgress where
+  progress : ∀ {M A}
+    → ∅ ⊢ M ⦂ A
+      ----------
+    → Progress M
+  progress {` x} (⊢` ())
+  progress {ƛ x ⇒ N} (⊢ƛ ⊢N) = done V-ƛ
+  progress {L · M} (⊢L · ⊢M)
+    with progress ⊢L
+  ...  | step L—→L′    =  step (ξ-·₁ L—→L′)
+  ...  | done V[L] with L       | V[L]
+  -- the following can be omitted, but cannot use absurd pattern
+  ...                 | `zero   | V-zero      =  contradiction ⊢L VerboseProgress.¬⊢zero⦂A⇒B
+  ...                 | `suc L  | V-suc V[L]  =  contradiction ⊢L VerboseProgress.¬⊢suc⦂A⇒B
+  -- ...                 | `zero   | ()
+  -- ...                 | `suc M  | ()
+  ...                 | ƛ x ⇒ N | V-ƛ with progress ⊢M
+  ...                                   | step M—→M′  =  step (ξ-·₂ V-ƛ M—→M′)
+  ...                                   | done V[M]   =  step (β-ƛ V[M])
+  -- Incomplete pattern matching for
+  --   with progress ⊢L       | L
+  -- ...  | step L—→L′        | _       = {!   !} -- step (ξ-·₁ L—→L′)
+  -- ...  | done V-zero       | `zero   = {- ⊢ Progress (`zero · M) -} {! ⊢L : ∅ ⊢ L ⦂ A₁ ⇒ A !}
+  -- ...  | done (V-suc V[L]) | `suc L  = {- ⊢ Progress (`suc L · M) -} {! ⊢L : ∅ ⊢ L ⦂ A₁ ⇒ A !} -- L is not be refined by L
+  -- ...  | done V-ƛ          | ƛ x ⇒ N with progress ⊢M
+  -- ...                                   | step M—→M′ = step (ξ-·₂ V-ƛ M—→M′)
+  -- ...                                   | done V[M]  = step (β-ƛ V[M])
+  -- L is not be refined by pattern matching on L
+  --   with L       | progress ⊢L
+  -- ...  | _       | step L—→L′        = step (ξ-·₁ L—→L′)
+  -- ...  | `zero   | done V-zero       = {- ⊢ Progress (`zero · M) -} {! ⊢L : ∅ ⊢ L ⦂ A₁ ⇒ A !}
+  -- ...  | `suc L  | done (V-suc V[L]) = {- ⊢ Progress (`suc L · M) -} {! ⊢L : ∅ ⊢ L ⦂ A₁ ⇒ A !}
+  -- ...  | ƛ x ⇒ N | done V-ƛ with progress ⊢M
+  -- ...                          | step M—→M′ = step (ξ-·₂ V-ƛ M—→M′)
+  -- ...                          | done V[M]  = step (β-ƛ V[M])
+  progress {`zero}  {`ℕ} ⊢zero = done V-zero
+  progress {`suc M} {`ℕ} (⊢suc ⊢M)
+    with progress ⊢M
+  ...  | done V[M] = done (V-suc V[M])
+  ...  | step M—→N = step (ξ-suc M—→N)
+  progress {case L [zero⇒ M |suc x ⇒ N ]} {A} (⊢case ⊢L ⊢M ⊢N )
+    with progress ⊢L
+  ...  | step L—→L′  =  step (ξ-case L—→L′)
+  ...  | done V[L] with L       | V[L]
+  ...                 | `zero   | V-zero      =  step β-zero
+  ...                 | `suc L  | V-suc V[L]  =  step (β-suc V[L])
+  -- the following can be omitted, but cannot use absurd pattern
+  ...                 | ƛ x ⇒ N | V-ƛ         =  contradiction ⊢L VerboseProgress.¬ƛx⇒N⦂ℕ
+  -- ...                 | ƛ x ⇒ N | ()
+  progress {μ x ⇒ N} {A} ⊢N                   =  step β-μ
+
+module ConciseProgress where
+  progress : ∀ {M A}
+    → ∅ ⊢ M ⦂ A
+      ----------
+    → Progress M
+  progress {` x} (⊢` ())
+  progress {ƛ x ⇒ N} (⊢ƛ ⊢N)  =  done V-ƛ
+  progress {L · M} (⊢L · ⊢M)
+    with progress ⊢L
+  ...  | step L—→L′  =  step (ξ-·₁ L—→L′)
+  ...  | done V-ƛ with progress ⊢M
+  ...                | step M—→M′  =  step (ξ-·₂ V-ƛ M—→M′)
+  ...                | done V[M]   =  step (β-ƛ V[M])
+  progress {`zero}  {`ℕ} ⊢zero  =  done V-zero
+  progress {`suc M} {`ℕ} (⊢suc ⊢M)
+    with progress ⊢M
+  ...  | done V[M]  =  done (V-suc V[M])
+  ...  | step M—→N  =  step (ξ-suc M—→N)
+  progress {case L [zero⇒ M |suc x ⇒ N ]} {A} (⊢case ⊢L ⊢M ⊢N )
+    with progress ⊢L
+  ...  | done V-zero  =  step β-zero
+  ...  | done (V-suc V[L])  =  step (β-suc V[L])
+  -- ...  | done V-ƛ = {!   !}
+  ...  | step L—→L′  =  step (ξ-case L—→L′)
+  progress {μ x ⇒ N} {A} (⊢μ ⊢N)  =  step β-μ
+
 progress : ∀ {M A}
   → ∅ ⊢ M ⦂ A
     ----------
@@ -266,8 +443,8 @@ or introduce subsidiary functions.
 Instead of defining a data type for `Progress M`, we could
 have formulated progress using disjunction and existentials:
 ```agda
-postulate
-  progress′ : ∀ M {A} → ∅ ⊢ M ⦂ A → Value M ⊎ ∃[ N ](M —→ N)
+-- postulate
+progress′ : ∀ M {A} → ∅ ⊢ M ⦂ A → Value M ⊎ ∃[ N ](M —→ N)
 ```
 This leads to a less perspicuous proof.  Instead of the mnemonic `done`
 and `step` we use `inj₁` and `inj₂`, and the term `N` is no longer
@@ -281,7 +458,33 @@ determine its bound variable and body, `ƛ x ⇒ N`, so we can show that
 Show that `Progress M` is isomorphic to `Value M ⊎ ∃[ N ](M —→ N)`.
 
 ```agda
--- Your code goes here
+Progress-≃ :
+  {M : Term} →
+  Progress M ≃ Value M ⊎ ∃[ N ](M —→ N)
+Progress-≃ =
+  record
+    { to      = to
+    ; from    = from
+    ; from∘to = from∘to
+    ; to∘from = to∘from
+    }
+  where
+
+  to : {M : Term} → Progress M → Value M ⊎ ∃[ N ](M —→ N)
+  to (done V[M])      =  inj₁ V[M]
+  to (step {N} M—→N)  =  inj₂ ⟨ N , M—→N ⟩
+
+  from : {M : Term} → Value M ⊎ ∃[ N ](M —→ N) → Progress M
+  from (inj₁ V[M])          =  done V[M]
+  from (inj₂ ⟨ N , M—→N ⟩)  =  step M—→N
+
+  from∘to : {M : Term} → (progress : Progress M) → from (to progress) ≡ progress
+  from∘to (done V[M])      =  refl
+  from∘to (step {N} M—→N)  =  refl
+
+  to∘from : {M : Term} → (sum : Value M ⊎ ∃[ N ](M —→ N)) → to (from sum) ≡ sum
+  to∘from (inj₁ V[M])          =  refl
+  to∘from (inj₂ ⟨ N , M—→N ⟩)  =  refl
 ```
 
 #### Exercise `progress′` (practice)
@@ -290,7 +493,27 @@ Write out the proof of `progress′` in full, and compare it to the
 proof of `progress` above.
 
 ```agda
--- Your code goes here
+-- progress′ : ∀ M {A} → ∅ ⊢ M ⦂ A → Value M ⊎ ∃[ N ](M —→ N)
+progress′ (` x) (⊢` ())
+progress′ (ƛ x ⇒ N) (⊢ƛ ⊢N) = inj₁ V-ƛ
+progress′ (L · M) (⊢L · ⊢M)
+  with progress′ L ⊢L
+...  | inj₂ ⟨ L′ , L—→L′ ⟩  =  inj₂ ⟨ L′ · M , ξ-·₁ L—→L′ ⟩
+...  | inj₁ V[L] with L       | V[L] | progress′ M ⊢M
+...                 | ƛ x ⇒ N | V-ƛ  | inj₁ V[M]            =  inj₂ ⟨ N [ x := M ]   , β-ƛ V[M] ⟩
+                    -- cannot use wildcard pattern, the goal be refined by pattern matching
+...                 | ƛ x ⇒ N | V-ƛ  | inj₂ ⟨ M′ , M—→M′ ⟩  =  inj₂ ⟨ (ƛ x ⇒ N) · M′ , ξ-·₂ V-ƛ M—→M′ ⟩
+progress′ `zero ⊢zero = inj₁ V-zero
+progress′ (`suc M) (⊢suc ⊢M)
+  with progress′ M ⊢M
+...  | inj₁ V[M]            =  inj₁ (V-suc V[M])
+...  | inj₂ ⟨ M′ , M—→M′ ⟩  =  inj₂ ⟨ `suc M′ , ξ-suc M—→M′ ⟩
+progress′ (case L [zero⇒ M |suc x ⇒ N ]) (⊢case ⊢L ⊢M ⊢N)
+  with progress′ L ⊢L
+...  | inj₁ V-zero            =  inj₂ ⟨ M , β-zero ⟩
+...  | inj₁ (V-suc {L} V[L])  =  inj₂ ⟨ N [ x := L ] , β-suc V[L] ⟩
+...  | inj₂ ⟨ L′ , L—→L′ ⟩    =  inj₂ ⟨ case L′ [zero⇒ M |suc x ⇒ N ] , ξ-case L—→L′ ⟩
+progress′ (μ x ⇒ N) (⊢μ ⊢N)   =  inj₂ ⟨ N [ x := (μ x ⇒ N) ] , β-μ ⟩
 ```
 
 #### Exercise `value?` (practice)
@@ -298,8 +521,12 @@ proof of `progress` above.
 Combine `progress` and `—→¬V` to write a program that decides
 whether a well-typed term is a value:
 ```agda
-postulate
-  value? : ∀ {A M} → ∅ ⊢ M ⦂ A → Dec (Value M)
+-- postulate
+value? : ∀ {A M} → ∅ ⊢ M ⦂ A → Dec (Value M)
+value? ⊢M
+ with progress ⊢M
+... | done V[M]  = yes V[M]
+... | step M—→M′ = no (—→¬V M—→M′)
 ```
 
 ## Prelude to preservation
@@ -418,6 +645,59 @@ applying `ρ` to find the evidence that `x` appears in `Δ`.
 With the extension lemma under our belts, it is straightforward to
 prove renaming preserves types:
 ```agda
+module VerboseRename where
+  rename : ∀ {Γ Δ}
+    → (∀ {x A} → Γ ∋ x ⦂ A → Δ ∋ x ⦂ A)
+      ----------------------------------
+    → (∀ {M A} → Γ ⊢ M ⦂ A → Δ ⊢ M ⦂ A)
+  rename ρ {` x}     (⊢` ∋x)    =  ⊢` (ρ ∋x)
+  rename ρ {ƛ x ⇒ N} (⊢ƛ ⊢N)    =  ⊢ƛ (rename (ext ρ) ⊢N)
+  rename ρ {L · M}   (⊢L · ⊢M)  =  rename ρ ⊢L · rename ρ ⊢M
+  rename ρ {`zero}   ⊢zero      =  ⊢zero
+  rename ρ {`suc M}  (⊢suc ⊢M)  =  ⊢suc (rename ρ ⊢M)
+  rename ρ {case L [zero⇒ M |suc x ⇒ N ]}
+           (⊢case ⊢L ⊢M ⊢N)     =  ⊢case (rename ρ ⊢L) (rename ρ ⊢M) (rename (ext ρ) ⊢N)
+  rename ρ {μ x ⇒ N} (⊢μ ⊢N)    =  ⊢μ (rename (ext ρ) ⊢N)
+
+  weaken :
+      {Γ : Context} {M : Term} {A : Type}
+    → ∅ ⊢ M ⦂ A
+      ----------
+    → Γ ⊢ M ⦂ A
+  weaken ⊢M = rename ρ ⊢M
+    where
+      ρ : {Γ : Context} {x : Id} {A : Type}
+       → ∅ ∋ x ⦂ A
+       → Γ ∋ x ⦂ A
+      ρ ()
+
+  drop :
+      {Γ : Context} {x : Id} {A B C : Type} {M : Term}
+    → Γ , x ⦂ A , x ⦂ B ⊢ M ⦂ C
+    → Γ , x ⦂ B ⊢ M ⦂ C
+  drop ⊢M = rename ρ ⊢M
+    where
+      ρ : {Γ : Context} {x y : Id} {A B C : Type}
+       → Γ , x ⦂ A , x ⦂ B ∋ y ⦂ C
+       → Γ , x ⦂ B ∋ y ⦂ C
+      ρ Z                 =  Z
+      ρ (S x≢y Z)         =  contradiction refl x≢y
+      ρ (S x≢y (S _ ∋y))  =  S x≢y ∋y
+
+  swap :
+      {Γ : Context} {x y : Id} {A B C : Type} {M : Term}
+    → x ≢ y
+    → Γ , y ⦂ B , x ⦂ A ⊢ M ⦂ C
+    → Γ , x ⦂ A , y ⦂ B ⊢ M ⦂ C
+  swap {Γ} {x} {y} x≢y ⊢M = rename ρ ⊢M
+    where
+      ρ : {Γ : Context} {z : Id} {A B C : Type}
+        → Γ , y ⦂ B , x ⦂ A ∋ z ⦂ C
+        → Γ , x ⦂ A , y ⦂ B ∋ z ⦂ C
+      ρ Z                   =  S x≢y Z
+      ρ (S z≢x Z)           =  Z
+      ρ (S z≢x (S z≢y ∋z))  =  S z≢y (S z≢x ∋z)
+
 rename : ∀ {Γ Δ}
   → (∀ {x A} → Γ ∋ x ⦂ A → Δ ∋ x ⦂ A)
     ----------------------------------
@@ -543,6 +823,36 @@ we require an arbitrary context `Γ`, as in the statement of the lemma.
 
 Here is the formal statement and proof that substitution preserves types:
 ```agda
+module VerboseSubst where
+  subst : ∀ {Γ y N V A B}
+    → ∅ ⊢ V ⦂ A
+    → Γ , y ⦂ A ⊢ N ⦂ B
+      --------------------
+    → Γ ⊢ N [ y := V ] ⦂ B
+  subst {Γ} {y} {` (.y)} ⊢V (⊢` Z)
+    with y ≟ y
+  ...  | yes refl  =  weaken ⊢V
+  ...  | no  y≢y   =  contradiction refl y≢y
+  subst {Γ} {y} {` x}    ⊢V (⊢` (S x≢y ∋x))
+    with x ≟ y
+  ...  | yes refl  =  contradiction refl x≢y
+  ...  | no  _     =  ⊢` ∋x
+  subst {Γ} {y} {ƛ x ⇒ N} ⊢V (⊢ƛ ⊢N)
+    with x ≟ y
+  ...  | yes refl  =  ⊢ƛ (drop ⊢N)
+  ...  | no  x≢y   =  ⊢ƛ (subst ⊢V (swap x≢y ⊢N))
+  subst {Γ} {y} {L · M} ⊢V (⊢L · ⊢M)   =  subst ⊢V ⊢L · subst ⊢V ⊢M
+  subst {Γ} {y} {`zero} ⊢V ⊢zero       =  ⊢zero
+  subst {Γ} {y} {`suc M} ⊢V (⊢suc ⊢M)  =  ⊢suc (subst ⊢V ⊢M)
+  subst {Γ} {y} {case L [zero⇒ M |suc x ⇒ N ]} ⊢V (⊢case ⊢L ⊢M ⊢N)
+    with x ≟ y
+  ...  | yes refl  =  ⊢case (subst ⊢V ⊢L) (subst ⊢V ⊢M) (drop ⊢N)
+  ...  | no  x≢y   =  ⊢case (subst ⊢V ⊢L) (subst ⊢V ⊢M) (subst ⊢V (swap x≢y ⊢N))
+  subst {Γ} {y} {μ x ⇒ N} ⊢V (⊢μ ⊢N)
+    with x ≟ y
+  ...  | yes refl  =  ⊢μ (drop ⊢N)
+  ...  | no  x≢y   =  ⊢μ (subst ⊢V (swap x≢y ⊢N))
+
 subst : ∀ {Γ x N V A B}
   → ∅ ⊢ V ⦂ A
   → Γ , x ⦂ A ⊢ N ⦂ B
@@ -739,7 +1049,37 @@ defined by mutual recursion with the proof that substitution
 preserves types.
 
 ```agda
--- Your code goes here
+pushSubst :
+    {Γ : Context} {x y : Id} {V N : Term} {A B X : Type}
+  → (⊢V : ∅ ⊢ V ⦂ A)
+  → (⊢N : Γ , y ⦂ A , x ⦂ X ⊢ N ⦂ B)
+  → Γ , x ⦂ X ⊢ push x N y V ⦂ B
+
+subst′ : ∀ {Γ y N V A B}
+  → ∅ ⊢ V ⦂ A
+  → Γ , y ⦂ A ⊢ N ⦂ B
+    --------------------
+  → Γ ⊢ N [ y := V ]′ ⦂ B
+
+pushSubst {Γ} {x} {y} ⊢V ⊢N
+  with x ≟ y
+...  | yes refl  =  drop ⊢N
+...  | no  x≢y   =  subst′ ⊢V (swap x≢y ⊢N)
+
+subst′ {Γ} {y} ⊢V (⊢` {x = .y} Z)
+  with y ≟ y
+...  | yes _     =  weaken ⊢V
+...  | no  y≢y   =  contradiction refl y≢y
+subst′ {Γ} {y} ⊢V (⊢` {x = x} (S x≢y ∋x))
+  with x ≟ y
+...  | yes refl  =  contradiction refl x≢y
+...  | no  _     =  ⊢` ∋x
+subst′ {Γ} {y} ⊢V (⊢ƛ {x = x} ⊢N)  =   ⊢ƛ ((pushSubst ⊢V ⊢N))
+subst′ {Γ} {y} ⊢V (⊢L · ⊢M)  =  subst′ ⊢V ⊢L · subst′ ⊢V ⊢M
+subst′ {Γ} {y} ⊢V ⊢zero      =  ⊢zero
+subst′ {Γ} {y} ⊢V (⊢suc ⊢M)  =  ⊢suc (subst′ ⊢V ⊢M)
+subst′ {Γ} {y} ⊢V (⊢case ⊢L ⊢M ⊢N) = ⊢case (subst′ ⊢V ⊢L) (subst′ ⊢V ⊢M) (pushSubst ⊢V ⊢N)
+subst′ {Γ} {y} ⊢V (⊢μ ⊢N)    =  ⊢μ (pushSubst ⊢V ⊢N)
 ```
 
 
@@ -749,6 +1089,21 @@ Once we have shown that substitution preserves types, showing
 that reduction preserves types is straightforward:
 
 ```agda
+module VerbosePreserve where
+  preserve : ∀ {M N A}
+    → ∅ ⊢ M ⦂ A
+    → M —→ N
+      ----------
+    → ∅ ⊢ N ⦂ A
+  preserve {L · M}                        (⊢L · ⊢M)               (ξ-·₁ L—→L′)       =  preserve ⊢L L—→L′ · ⊢M
+  preserve {L · M}                        (⊢L · ⊢M)               (ξ-·₂ V[L] M—→M′)  =  ⊢L · preserve ⊢M M—→M′
+  preserve {L · M}                        (⊢ƛ ⊢L · ⊢M)            (β-ƛ V[M])         =  subst ⊢M ⊢L
+  preserve {`suc M}                       (⊢suc ⊢M)               (ξ-suc M—→N)       =  ⊢suc (preserve ⊢M M—→N)
+  preserve {case L [zero⇒ M |suc x ⇒ N ]} (⊢case ⊢L ⊢M ⊢N)        (ξ-case L—→L′)     =  ⊢case (preserve ⊢L L—→L′) ⊢M ⊢N
+  preserve {case L [zero⇒ M |suc x ⇒ N ]} (⊢case ⊢L ⊢M ⊢N)        (β-zero)           =  ⊢M
+  preserve {case L [zero⇒ M |suc x ⇒ N ]} (⊢case (⊢suc ⊢L) ⊢M ⊢N) (β-suc V[V])       =  subst ⊢L ⊢N
+  preserve {μ x ⇒ N}                      (⊢μ ⊢N)                 (β-μ)              =  subst (⊢μ ⊢N) ⊢N
+
 preserve : ∀ {M N A}
   → ∅ ⊢ M ⦂ A
   → M —→ N
@@ -899,6 +1254,19 @@ data Steps (L : Term) : Set where
 The evaluator takes gas and evidence that a term is well typed,
 and returns the corresponding steps:
 ```agda
+module VerboseEval where
+  eval : ∀ {L A}
+    → Gas
+    → ∅ ⊢ L ⦂ A
+      ---------
+    → Steps L
+  eval {L} (gas zero)    ⊢L                 =  steps (L ∎) out-of-gas
+  eval {L} (gas (suc n)) ⊢L
+    with progress ⊢L
+  ...  | done V[L]                          =  steps (L ∎) (done V[L])
+  ...  | step {M} L—→M with eval (gas n) (preserve ⊢L L—→M)
+  ...                     | steps M—↠N fin  =  steps (L —→⟨ L—→M ⟩ M—↠N ) fin
+
 eval : ∀ {L A}
   → Gas
   → ∅ ⊢ L ⦂ A
@@ -941,9 +1309,14 @@ sequence given earlier.  First, we show that the term `sucμ`
 is well typed:
 ```agda
 ⊢sucμ : ∅ ⊢ μ "x" ⇒ `suc ` "x" ⦂ `ℕ
-⊢sucμ = ⊢μ (⊢suc (⊢` ∋x))
+⊢sucμ = ⊢μ ⊢suc′
   where
+  ∋x : ∅ , "x" ⦂ `ℕ ∋ "x" ⦂ `ℕ
   ∋x = Z
+  ⊢x : ∅ , "x" ⦂ `ℕ ⊢ ` "x" ⦂ `ℕ
+  ⊢x = ⊢` ∋x
+  ⊢suc′ : ∅ , "x" ⦂ `ℕ ⊢ `suc (` "x") ⦂ `ℕ
+  ⊢suc′ = ⊢suc ⊢x
 ```
 To show the first three steps of the infinite reduction
 sequence, we evaluate with three steps worth of gas:
@@ -1228,7 +1601,8 @@ above.
 Using the evaluator, confirm that two times two is four.
 
 ```agda
--- Your code goes here
+-- _ : eval (gas 100) ⊢2*2 ≡ ?
+-- _ = {!   !}
 ```
 
 
@@ -1238,7 +1612,17 @@ Without peeking at their statements above, write down the progress
 and preservation theorems for the simply typed lambda-calculus.
 
 ```agda
--- Your code goes here
+postulate
+  ‵progress :
+      {M : Term} {A : Type}
+    →  ∅ ⊢ M ⦂ A
+    → (Value M) ⊎ (∃[ N ] (M —→ N))
+
+  `preserve :
+      {M N : Term} {A : Type}
+    → ∅ ⊢ M ⦂ A
+    → (M —→ N)
+    → ∅ ⊢ N ⦂ A
 ```
 
 
@@ -1274,33 +1658,30 @@ Stuck M  =  Normal M × ¬ Value M
 
 Using progress, it is easy to show that no well-typed term is stuck:
 ```agda
-postulate
-  unstuck : ∀ {M A}
-    → ∅ ⊢ M ⦂ A
-      -----------
-    → ¬ (Stuck M)
+unstuck : ∀ {M A}
+  → ∅ ⊢ M ⦂ A
+    -----------
+  → ¬ (Stuck M)
 ```
 
 Using preservation, it is easy to show that after any number of steps,
 a well-typed term remains well typed:
 ```agda
-postulate
-  preserves : ∀ {M N A}
-    → ∅ ⊢ M ⦂ A
-    → M —↠ N
-      ---------
-    → ∅ ⊢ N ⦂ A
+preserves : ∀ {L N A}
+  → ∅ ⊢ L ⦂ A
+  → L —↠ N
+    ---------
+  → ∅ ⊢ N ⦂ A
 ```
 
 An easy consequence is that starting from a well-typed term, taking
 any number of reduction steps leads to a term that is not stuck:
 ```agda
-postulate
-  wttdgs : ∀ {M N A}
-    → ∅ ⊢ M ⦂ A
-    → M —↠ N
-      -----------
-    → ¬ (Stuck N)
+wttdgs : ∀ {M N A}
+  → ∅ ⊢ M ⦂ A
+  → M —↠ N
+    -----------
+  → ¬ (Stuck N)
 ```
 Felleisen and Wright, who introduced proofs via progress and
 preservation, summarised this result with the slogan _well-typed terms
@@ -1314,7 +1695,6 @@ showed _well-typed terms don't go wrong_.)
 Give an example of an ill-typed term that does get stuck.
 
 ```agda
--- Your code goes here
 ```
 
 #### Exercise `unstuck` (recommended)
@@ -1322,7 +1702,15 @@ Give an example of an ill-typed term that does get stuck.
 Provide proofs of the three postulates, `unstuck`, `preserves`, and `wttdgs` above.
 
 ```agda
--- Your code goes here
+unstuck ⊢M ⟨ ¬M—→N , ¬V[M] ⟩
+  with progress ⊢M
+...  | done V[M]      =  ¬V[M] V[M]
+...  | step {N} M—→N  =  ¬M—→N M—→N
+
+preserves {L} ⊢L ((.L) ∎)             =  ⊢L
+preserves {L} ⊢L (_ —→⟨ L—→M ⟩ M—↠N)  =  preserves (preserve ⊢L L—→M) M—↠N
+
+wttdgs ⊢M M—↠N = unstuck (preserves ⊢M M—↠N)
 ```
 
 ## Reduction is deterministic
@@ -1343,6 +1731,27 @@ cong₄ f refl refl refl refl = refl
 
 It is now straightforward to show that reduction is deterministic:
 ```agda
+module VerboseDet where
+  det : ∀ {M M′ M″}
+    → (M —→ M′)
+    → (M —→ M″)
+      --------
+    → M′ ≡ M″
+  det {L · M}                        (ξ-·₁ L—→L′)   (ξ-·₁ L—→L″)    =  cong (_· M) (det L—→L′ L—→L″)
+  det {L · M}                        (ξ-·₁ L—→L′)   (ξ-·₂ V[L] _)   =  contradiction L—→L′ (V¬—→ V[L])
+  det {L · M}                        (ξ-·₂ V[L] _)  (ξ-·₁ L—→L′)    =  contradiction L—→L′ (V¬—→ V[L])
+  det {L · M}                        (ξ-·₂ _ M—→M′) (ξ-·₂ _ M—→M″)  =  cong (L ·_) (det M—→M′ M—→M″)
+  det {L · M}                        (ξ-·₂ _ M—→M′) (β-ƛ V[M])      =  contradiction M—→M′ (V¬—→ V[M])
+  det {(ƛ x ⇒ N) · M}                (β-ƛ V[M])     (ξ-·₂ _ M—→M″)  =  contradiction M—→M″ (V¬—→ V[M])
+  det {(ƛ x ⇒ N) · M}                (β-ƛ V[M])     (β-ƛ V[M]′)     =  refl
+  det {`suc M}                       (ξ-suc M—→M′)  (ξ-suc M—→M″)   =  cong `suc_ (det M—→M′ M—→M″)
+  det {case L [zero⇒ M |suc x ⇒ N ]} (ξ-case M—→M′) (ξ-case M—→M″)  =  cong case_[zero⇒ M |suc x ⇒ N ] (det M—→M′ M—→M″)
+  det {case L [zero⇒ M |suc x ⇒ N ]} (ξ-case M—→M′) (β-suc V[V])    =  contradiction M—→M′ (V¬—→ (V-suc V[V]))
+  det {case L [zero⇒ M |suc x ⇒ N ]} (β-zero)       (β-zero)        =  refl
+  det {case L [zero⇒ M |suc x ⇒ N ]} (β-suc V[V])   (ξ-case M—→M″)  =  contradiction M—→M″ (V¬—→ (V-suc V[V]))
+  det {case L [zero⇒ M |suc x ⇒ N ]} (β-suc V[V])   (β-suc _)       =  refl
+  det {μ x ⇒ N}                      (β-μ)          (β-μ)           =  refl
+
 det : ∀ {M M′ M″}
   → (M —→ M′)
   → (M —→ M″)
@@ -1350,19 +1759,19 @@ det : ∀ {M M′ M″}
   → M′ ≡ M″
 det (ξ-·₁ L—→L′)   (ξ-·₁ L—→L″)     =  cong₂ _·_ (det L—→L′ L—→L″) refl
 det (ξ-·₁ L—→L′)   (ξ-·₂ VL M—→M″)  =  contradiction L—→L′ (V¬—→ VL)
-det (ξ-·₁ L—→L′)   (β-ƛ _)          =  contradiction L—→L′ (V¬—→ V-ƛ)
+-- det (ξ-·₁ L—→L′)   (β-ƛ _)          =  contradiction L—→L′ (V¬—→ V-ƛ)
 det (ξ-·₂ VL _)    (ξ-·₁ L—→L″)     =  contradiction L—→L″ (V¬—→ VL)
 det (ξ-·₂ _ M—→M′) (ξ-·₂ _ M—→M″)   =  cong₂ _·_ refl (det M—→M′ M—→M″)
 det (ξ-·₂ _ M—→M′) (β-ƛ VM)         =  contradiction M—→M′ (V¬—→ VM)
-det (β-ƛ _)        (ξ-·₁ L—→L″)     =  contradiction L—→L″ (V¬—→ V-ƛ)
+-- det (β-ƛ _)        (ξ-·₁ L—→L″)     =  contradiction L—→L″ (V¬—→ V-ƛ)
 det (β-ƛ VM)       (ξ-·₂ _ M—→M″)   =  contradiction M—→M″ (V¬—→ VM)
 det (β-ƛ _)        (β-ƛ _)          =  refl
 det (ξ-suc M—→M′)  (ξ-suc M—→M″)    =  cong `suc_ (det M—→M′ M—→M″)
 det (ξ-case L—→L′) (ξ-case L—→L″)   =  cong₄ case_[zero⇒_|suc_⇒_]
                                          (det L—→L′ L—→L″) refl refl refl
-det (ξ-case L—→L′) β-zero           =  contradiction L—→L′ (V¬—→ V-zero)
+-- det (ξ-case L—→L′) β-zero           =  contradiction L—→L′ (V¬—→ V-zero)
 det (ξ-case L—→L′) (β-suc VL)       =  contradiction L—→L′ (V¬—→ (V-suc VL))
-det β-zero         (ξ-case M—→M″)   =  contradiction M—→M″ (V¬—→ V-zero)
+-- det β-zero         (ξ-case M—→M″)   =  contradiction M—→M″ (V¬—→ V-zero)
 det β-zero         β-zero           =  refl
 det (β-suc VL)     (ξ-case L—→L″)   =  contradiction L—→L″ (V¬—→ (V-suc VL))
 det (β-suc _)      (β-suc _)        =  refl

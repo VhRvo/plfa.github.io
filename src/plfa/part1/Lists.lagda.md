@@ -356,9 +356,9 @@ reverse of the second appended to the reverse of the first:
 
 ```agda
 reverse-++-distrib :
-    {A : Set}
-  → (xs ys : List A)
-  → reverse (xs ++ ys) ≡ reverse ys ++ reverse xs
+  {A : Set} →
+  (xs ys : List A) →
+  reverse (xs ++ ys) ≡ reverse ys ++ reverse xs
 reverse-++-distrib [] ys =
   begin
     reverse ([] ++ ys)
@@ -582,9 +582,9 @@ The last step of the proof requires extensionality.
 open import plfa.part1.Isomorphism using (extensionality)
 
 map-compose :
-    {A B C : Set}
-  → (g : B → C) → (f : A → B)
-  → map (g ∘ f) ≡ map g ∘ map f
+  {A B C : Set} →
+  (g : B → C) → (f : A → B) →
+  map (g ∘ f) ≡ map g ∘ map f
 map-compose {A} g f = extensionality ext
   where
 
@@ -617,9 +617,9 @@ Prove the following relationship between map and append:
 
 ```agda
 map-++-distribute :
-    {A B : Set} → (f : A → B)
-  → (xs ys : List A)
-  → map f (xs ++ ys) ≡ map f xs ++ map f ys
+  {A B : Set} → (f : A → B) →
+  (xs ys : List A) →
+  map f (xs ++ ys) ≡ map f xs ++ map f ys
 map-++-distribute f []       ys = refl
 map-++-distribute f (x ∷ xs) ys =
   begin
@@ -771,8 +771,8 @@ Show as a consequence of `foldr-++` above that
 
 ```agda
 foldr-∷ :
-    {A : Set} → (xs : List A)
-  → foldr _∷_ [] xs ≡ xs
+  {A : Set} → (xs : List A) →
+  foldr _∷_ [] xs ≡ xs
 foldr-∷ []       = refl
 foldr-∷ (x ∷ xs) =
   begin
@@ -784,8 +784,8 @@ foldr-∷ (x ∷ xs) =
   ∎
 
 foldr-++-consequence :
-    {A : Set} → (xs ys : List A)
-  → xs ++ ys ≡ foldr _∷_ ys xs
+  {A : Set} → (xs ys : List A) →
+  xs ++ ys ≡ foldr _∷_ ys xs
 foldr-++-consequence xs ys =
   begin
     xs ++ ys
@@ -808,9 +808,9 @@ The proof requires extensionality.
 
 ```agda
 map-is-foldr :
-    {A B : Set}
-  → (f : A → B)
-  → map f ≡ foldr (λ x xs → f x ∷ xs) []
+  {A B : Set} →
+  (f : A → B) →
+  map f ≡ foldr (λ x xs → f x ∷ xs) []
 map-is-foldr {A} f = extensionality ext
   where
 
@@ -851,9 +851,9 @@ Demonstrate an analogue of `map-is-foldr` for the type of trees.
 map-Tree : ∀ {A B C D : Set} → (A → C) → (B → D) → Tree A B → Tree C D
 ```agda
 map-is-fold-Tree :
-    {A B C D : Set}
-  → (f : A → C) → (g : B → D)
-  → map-Tree f g ≡ fold-Tree (λ x → leaf (f x)) (λ left y right → node left (g y) right)
+  {A B C D : Set} →
+  (f : A → C) → (g : B → D) →
+  map-Tree f g ≡ fold-Tree (λ x → leaf (f x)) (λ left y right → node left (g y) right)
 map-is-fold-Tree {A} {B} f g = extensionality ext
   where
 
@@ -1455,9 +1455,9 @@ If so, prove; if not, explain why.
 
 ```agda
 ¬Any⇔All¬ :
-    {A : Set} → {P : A → Set}
-  → (xs : List A)
-  → (¬_ ∘ Any P) xs ⇔ All (¬_ ∘ P) xs
+  {A : Set} → {P : A → Set} →
+  (xs : List A) →
+  (¬_ ∘ Any P) xs ⇔ All (¬_ ∘ P) xs
 ¬Any⇔All¬ {A} {P} xs =
   record
     { to   = to xs
@@ -1488,9 +1488,9 @@ If so, prove; if not, explain why.
 open import Relation.Nullary using (contradiction)
 
 ¬All⇔Any¬ :
-    {A : Set} → {P : A → Set}
-  → (xs : List A)
-  → (¬_ ∘ All P) xs ⇔ Any (¬_ ∘ P) xs
+  {A : Set} → {P : A → Set} →
+  (xs : List A) →
+  (¬_ ∘ All P) xs ⇔ Any (¬_ ∘ P) xs
 ¬All⇔Any¬ {A} {P} xs =
   record
     { to = to xs
@@ -1532,9 +1532,9 @@ Show that the equivalence `¬Any⇔All¬` can be extended to an isomorphism.
 
 ```agda
 ¬Any≃All¬ :
-    {A : Set} → {P : A → Set}
-  → (xs : List A)
-  → (¬_ ∘ Any P) xs ≃ All (¬_ ∘ P) xs
+  {A : Set} → {P : A → Set} →
+  (xs : List A) →
+  (¬_ ∘ Any P) xs ≃ All (¬_ ∘ P) xs
 ¬Any≃All¬ {A} {P} xs =
   record
     { to = to xs

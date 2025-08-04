@@ -393,6 +393,22 @@ data Value : Term → Set where
     → Value (`suc V)
 ```
 
+The proofs that Term `M` is a value are the same.
+
+```agda
+open import Relation.Binary.PropositionalEquality using (cong)
+
+V≡V :
+    (V : Term)
+  → (V[V] : Value V)
+  → (V[V]′ : Value V)
+  → V[V] ≡ V[V]′
+V≡V (ƛ x ⇒ V) V-ƛ          V-ƛ            =  refl
+V≡V `zero     V-zero       V-zero         =  refl
+V≡V (`suc V)  (V-suc V[V]) (V-suc V[V]′)  =  cong V-suc (V≡V V V[V] V[V]′)
+
+```
+
 In what follows, we let `V` and `W` range over values.
 
 
@@ -583,7 +599,7 @@ push x N y V
 `zero [ y := V ]′     = `zero
 (`suc M) [ y := V ]′  = `suc (M [ y := V ]′)
 case L [zero⇒ M |suc x ⇒ N ] [ y := V ]′ =
-  case L [ y := V ]
+  case L [ y := V ]′
     [zero⇒ M [ y := V ]′
     |suc x ⇒ push x N y V
     ]
@@ -685,9 +701,9 @@ data _—→_ : Term → Term → Set where
       ---------------------------------------------------
     → case `suc V [zero⇒ M |suc x ⇒ N ] —→ N [ x := V ]
 
-  β-μ : ∀ {x M}
+  β-μ : ∀ {x N}
       ------------------------------
-    → μ x ⇒ M —→ M [ x := μ x ⇒ M ]
+    → μ x ⇒ N —→ N [ x := μ x ⇒ N ]
 ```
 
 The reduction rules are carefully designed to ensure that subterms
@@ -987,8 +1003,8 @@ _ =
     `suc (`suc `zero)
   ∎
 
-Value[sucᶜ] : Value sucᶜ
-Value[sucᶜ] = V-ƛ {"n"} {`suc (` "n")}
+V[sucᶜ] : Value sucᶜ
+V[sucᶜ] = V-ƛ {"n"} {`suc (` "n")}
 
 _ : twoᶜ · sucᶜ · `zero —↠ two
 _ =
@@ -996,13 +1012,13 @@ _ =
     twoᶜ · sucᶜ · `zero
   —→⟨ ξ-·₁ {twoᶜ · sucᶜ} {ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")} {`zero}
         (β-ƛ {"s"} {ƛ "z" ⇒ ` "s" · (` "s" · ` "z")} {sucᶜ}
-          Value[sucᶜ]) ⟩
+          V[sucᶜ]) ⟩
     (ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")) · `zero
   —→⟨ β-ƛ {"z"} {sucᶜ · (sucᶜ · ` "z")} {`zero}
         V-zero ⟩
     sucᶜ · (sucᶜ · `zero)
   —→⟨ ξ-·₂ {sucᶜ} {sucᶜ · `zero} {`suc `zero}
-        Value[sucᶜ]
+        V[sucᶜ]
         (β-ƛ {"n"} {`suc (` "n")} {`zero}
           V-zero) ⟩
     sucᶜ · `suc `zero
@@ -1060,25 +1076,25 @@ _ =
 one : Term
 one = `suc `zero
 
-Value[zero] : Value `zero
-Value[zero] = V-zero
+V[zero] : Value `zero
+V[zero] = V-zero
 
-Value[one] : Value one
-Value[one] =
+V[one] : Value one
+V[one] =
   V-suc {`zero} V-zero
 
-Value[two] : Value two
-Value[two] =
-  V-suc {one} Value[one]
+V[two] : Value two
+V[two] =
+  V-suc {one} V[one]
 
-Value[twoᶜ] : Value twoᶜ
-Value[twoᶜ] = V-ƛ {"s"} {ƛ "z" ⇒ ` "s" · (` "s" · ` "z")}
+V[twoᶜ] : Value twoᶜ
+V[twoᶜ] = V-ƛ {"s"} {ƛ "z" ⇒ ` "s" · (` "s" · ` "z")}
 
 three : Term
 three = `suc two
 
-Value[three] : Value three
-Value[three] = V-suc {two} Value[two]
+V[three] : Value three
+V[three] = V-suc {two} V[two]
 
 four : Term
 four = `suc three
@@ -1091,35 +1107,35 @@ _ =
     (ƛ "m" ⇒ ƛ "n" ⇒
       case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
         · two · two
-  —→⟨ ξ-·₁ (β-ƛ Value[two]) ⟩
+  —→⟨ ξ-·₁ (β-ƛ V[two]) ⟩
     (ƛ "n" ⇒
       case two [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
          · two
-  —→⟨ β-ƛ Value[two] ⟩
+  —→⟨ β-ƛ V[two] ⟩
     case two [zero⇒ two |suc "m" ⇒ `suc (plus · ` "m" · two) ]
-  —→⟨ β-suc Value[one] ⟩
+  —→⟨ β-suc V[one] ⟩
     `suc (plus · one · two)
   —→⟨ ξ-suc (ξ-·₁ (ξ-·₁ β-μ)) ⟩
     `suc ((ƛ "m" ⇒ ƛ "n" ⇒
       case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
         · one · two)
-  —→⟨ ξ-suc (ξ-·₁ (β-ƛ Value[one])) ⟩
+  —→⟨ ξ-suc (ξ-·₁ (β-ƛ V[one])) ⟩
     `suc ((ƛ "n" ⇒
       case `suc `zero [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
         · two)
-  —→⟨ ξ-suc (β-ƛ Value[two]) ⟩
+  —→⟨ ξ-suc (β-ƛ V[two]) ⟩
     `suc (case one [zero⇒ two |suc "m" ⇒ `suc (plus · ` "m" · two) ])
-  —→⟨ ξ-suc (β-suc Value[zero]) ⟩
+  —→⟨ ξ-suc (β-suc V[zero]) ⟩
     `suc (`suc (plus · `zero · two))
   —→⟨ ξ-suc (ξ-suc (ξ-·₁ (ξ-·₁ β-μ))) ⟩
     `suc (`suc ((ƛ "m" ⇒ ƛ "n" ⇒
       case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
         · `zero · two))
-  —→⟨ ξ-suc (ξ-suc (ξ-·₁ (β-ƛ Value[zero]))) ⟩
+  —→⟨ ξ-suc (ξ-suc (ξ-·₁ (β-ƛ V[zero]))) ⟩
     `suc (`suc ((ƛ "n" ⇒
       case `zero [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
         · two))
-  —→⟨ ξ-suc (ξ-suc (β-ƛ Value[two])) ⟩
+  —→⟨ ξ-suc (ξ-suc (β-ƛ V[two])) ⟩
     `suc (`suc (case `zero [zero⇒ two |suc "m" ⇒ `suc (plus · ` "m" · two) ]))
   —→⟨ ξ-suc (ξ-suc β-zero) ⟩
     `suc (`suc (`suc (`suc `zero)))
@@ -1165,33 +1181,33 @@ _ =
   begin
     (ƛ "m" ⇒ ƛ "n" ⇒ ƛ "s" ⇒ ƛ "z" ⇒ ` "m" · ` "s" · (` "n" · ` "s" · ` "z"))
       · twoᶜ · twoᶜ · sucᶜ · `zero
-  —→⟨ ξ-·₁ (ξ-·₁ (ξ-·₁ (β-ƛ Value[twoᶜ]))) ⟩
+  —→⟨ ξ-·₁ (ξ-·₁ (ξ-·₁ (β-ƛ V[twoᶜ]))) ⟩
     (ƛ "n" ⇒ ƛ "s" ⇒ ƛ "z" ⇒ twoᶜ · ` "s" · (` "n" · ` "s" · ` "z"))
       · twoᶜ · sucᶜ · `zero
-  —→⟨ ξ-·₁ (ξ-·₁ (β-ƛ Value[twoᶜ])) ⟩
+  —→⟨ ξ-·₁ (ξ-·₁ (β-ƛ V[twoᶜ])) ⟩
     (ƛ "s" ⇒ ƛ "z" ⇒ twoᶜ · ` "s" · (twoᶜ · ` "s" · ` "z")) · sucᶜ · `zero
-  —→⟨ ξ-·₁ (β-ƛ Value[sucᶜ]) ⟩
+  —→⟨ ξ-·₁ (β-ƛ V[sucᶜ]) ⟩
     (ƛ "z" ⇒ twoᶜ · sucᶜ · (twoᶜ · sucᶜ · ` "z")) · `zero
-  —→⟨ β-ƛ Value[zero] ⟩
+  —→⟨ β-ƛ V[zero] ⟩
     twoᶜ · sucᶜ · (twoᶜ · sucᶜ · `zero)
-  —→⟨ ξ-·₁ (β-ƛ Value[sucᶜ]) ⟩
+  —→⟨ ξ-·₁ (β-ƛ V[sucᶜ]) ⟩
   let sucᶜ∘sucᶜ = (ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z"))
-      Value[sucᶜ∘sucᶜ] = V-ƛ {"z"} {sucᶜ · (sucᶜ · ` "z")}
+      V[sucᶜ∘sucᶜ] = V-ƛ {"z"} {sucᶜ · (sucᶜ · ` "z")}
   in
     sucᶜ∘sucᶜ · (twoᶜ · sucᶜ · `zero)
-  —→⟨ ξ-·₂ Value[sucᶜ∘sucᶜ] (ξ-·₁ (β-ƛ Value[sucᶜ])) ⟩
+  —→⟨ ξ-·₂ V[sucᶜ∘sucᶜ] (ξ-·₁ (β-ƛ V[sucᶜ])) ⟩
     sucᶜ∘sucᶜ · ((ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")) · `zero)
-  —→⟨ ξ-·₂ Value[sucᶜ∘sucᶜ] (β-ƛ Value[zero]) ⟩
+  —→⟨ ξ-·₂ V[sucᶜ∘sucᶜ] (β-ƛ V[zero]) ⟩
     sucᶜ∘sucᶜ · (sucᶜ · (sucᶜ · `zero))
-  —→⟨ ξ-·₂ Value[sucᶜ∘sucᶜ] (ξ-·₂ Value[sucᶜ] (β-ƛ Value[zero])) ⟩
+  —→⟨ ξ-·₂ V[sucᶜ∘sucᶜ] (ξ-·₂ V[sucᶜ] (β-ƛ V[zero])) ⟩
     sucᶜ∘sucᶜ · (sucᶜ · one)
-  —→⟨ ξ-·₂ Value[sucᶜ∘sucᶜ] (β-ƛ Value[one]) ⟩
+  —→⟨ ξ-·₂ V[sucᶜ∘sucᶜ] (β-ƛ V[one]) ⟩
     sucᶜ∘sucᶜ · two
-  —→⟨ β-ƛ Value[two] ⟩
+  —→⟨ β-ƛ V[two] ⟩
     sucᶜ · (sucᶜ · two)
-  —→⟨ ξ-·₂ Value[sucᶜ] (β-ƛ Value[two]) ⟩
+  —→⟨ ξ-·₂ V[sucᶜ] (β-ƛ V[two]) ⟩
     sucᶜ · three
-  —→⟨ β-ƛ Value[three] ⟩
+  —→⟨ β-ƛ V[three] ⟩
    `suc (`suc (`suc (`suc `zero)))
   ∎
 ```
@@ -1212,23 +1228,23 @@ _ =
     ((ƛ "m" ⇒ ƛ "n" ⇒
       case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ]))
         · one · one
-  —→⟨ ξ-·₁ (β-ƛ Value[one]) ⟩
+  —→⟨ ξ-·₁ (β-ƛ V[one]) ⟩
     (ƛ "n" ⇒
       case one [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
         · one
-  —→⟨ β-ƛ Value[one] ⟩
+  —→⟨ β-ƛ V[one] ⟩
     case one [zero⇒ one |suc "m" ⇒ `suc (plus · ` "m" · one) ]
-  —→⟨ β-suc Value[zero] ⟩
+  —→⟨ β-suc V[zero] ⟩
     `suc (plus · `zero · one)
   —→⟨ ξ-suc (ξ-·₁ (ξ-·₁ β-μ)) ⟩
     `suc ((ƛ "m" ⇒ ƛ "n" ⇒
       case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
         · `zero · one)
-  —→⟨ ξ-suc (ξ-·₁ (β-ƛ Value[zero])) ⟩
+  —→⟨ ξ-suc (ξ-·₁ (β-ƛ V[zero])) ⟩
     `suc ((ƛ "n" ⇒
       case `zero [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
         · one)
-  —→⟨ ξ-suc (β-ƛ Value[one]) ⟩
+  —→⟨ ξ-suc (β-ƛ V[one]) ⟩
     `suc (case `zero [zero⇒ one |suc "m" ⇒ `suc (plus · ` "m" · one) ])
   —→⟨ ξ-suc β-zero ⟩
     `suc one
@@ -1256,7 +1272,7 @@ infixr 7 _⇒_
 
 data Type : Set where
   _⇒_ : Type → Type → Type
-  `ℕ : Type
+  `ℕ  : Type
 ```
 
 ### Precedence
@@ -1516,10 +1532,10 @@ data _⊢_⦂_ : Context → Term → Type → Set where
       -------------------------------------
     → Γ ⊢ case L [zero⇒ M |suc x ⇒ N ] ⦂ A
 
-  ⊢μ : ∀ {Γ x M A}
-    → Γ , x ⦂ A ⊢ M ⦂ A
+  ⊢μ : ∀ {Γ x N A}
+    → Γ , x ⦂ A ⊢ N ⦂ A
       -----------------
-    → Γ ⊢ μ x ⇒ M ⦂ A
+    → Γ ⊢ μ x ⇒ N ⦂ A
 ```
 
 Each type rule is named after the constructor for the
@@ -1816,6 +1832,9 @@ showing that it is well typed.
         ∋* = S′ (S′ (S′ Z))
         ∋m′ = Z
         ∋n′ = S′ Z
+
+⊢2*2 : ∅ ⊢ mul · two · two ⦂ `ℕ
+⊢2*2 = ⊢mul · ⊢two · ⊢two
 ```
 
 
@@ -1837,6 +1856,9 @@ showing that it is well typed.
     ∋n = S′ (S′ Z)
     ∋s = S′ Z
     ∋z = Z
+
+⊢2*2ᶜ : ∅ ⊢ mulᶜ · twoᶜ · twoᶜ · sucᶜ · `zero ⦂ `ℕ
+⊢2*2ᶜ = ⊢mulᶜ · ⊢twoᶜ · ⊢twoᶜ · ⊢sucᶜ · ⊢zero
 ```
 
 

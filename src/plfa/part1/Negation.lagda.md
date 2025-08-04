@@ -479,6 +479,9 @@ module de (de : (A : Set) → ¬ ¬ A → A) where
   DeMorgan : (A B : Set) → ¬ (¬ A × ¬ B) → A ⊎ B
   DeMorgan A B f  =  de (A ⊎ B) (λ ¬A⊎B → f ⟨ (λ a → ¬A⊎B (inj₁ a)) , (λ b → ¬A⊎B (inj₂ b)) ⟩)
 
+  DeMorgan₂ : (A B : Set) → ¬ (A × B) → ¬ A ⊎ ¬ B
+  DeMorgan₂ A B f  = de (¬ A ⊎ ¬ B) (λ ¬[¬A⊎¬B] → ¬[¬A⊎¬B] (inj₁ (λ a → ¬[¬A⊎¬B] (inj₂ (λ b → f ⟨ a , b ⟩)))))
+
 module Peirce (Peirce : (A B : Set) → ((A → B) → A) → A) where
 
   em : (A : Set) → A ⊎ ¬ A
