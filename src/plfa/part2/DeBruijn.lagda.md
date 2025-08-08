@@ -507,7 +507,8 @@ two natural numbers, now adapted to the intrinsically-typed
 de Bruijn representation.
 
 ```agda
--- Your code goes here
+mul : {Γ : Context} → Γ ⊢ `ℕ ⇒ `ℕ ⇒ `ℕ
+mul = μ ƛ ƛ (case (# 1) `zero ((plus · (# 1) · ((# 3) · (# 0) · (# 1)))))
 ```
 
 
@@ -526,6 +527,14 @@ extension yields a map from the first context extended to the
 second context similarly extended.  It looks exactly like the
 old extension lemma, but with all names and terms dropped:
 ```agda
+module VerboseExt where
+  ext : ∀ {Γ Δ}
+    → (∀ {A} →       Γ ∋ A →     Δ ∋ A)
+      ---------------------------------
+    → (∀ {A B} → Γ , B ∋ A → Δ , B ∋ A)
+  ext {Γ} {Δ} ρ {A} {.A} (Z {.Γ} {.A})  =  Z {Δ} {A}
+  ext {Γ} {Δ} ρ          (S x)          =  S (ρ x)
+
 ext : ∀ {Γ Δ}
   → (∀ {A} →       Γ ∋ A →     Δ ∋ A)
     ---------------------------------
@@ -588,6 +597,66 @@ calculus.
 Here is an example of renaming a term with one free
 and one bound variable:
 ```agda
+module VerboseRenamingExample where
+
+  open Eq.≡-Reasoning renaming (_∎ to _≡-∎; begin_ to ≡-begin_)
+
+  M₀ : ∅ , `ℕ ⇒ `ℕ ⊢ `ℕ ⇒ `ℕ
+  M₀ = ƛ (# 1 · (# 1 · # 0))
+
+  M₁ : ∅ , `ℕ ⇒ `ℕ , `ℕ ⊢ `ℕ ⇒ `ℕ
+  M₁ = ƛ (# 2 · (# 2 · # 0))
+
+  _ : rename S_ M₀ ≡ M₁
+  _ =
+    ≡-begin
+      rename S_ M₀
+    ≡⟨⟩
+    let ρ = ext S_
+    in
+      ƛ (rename ρ (# 1 · (# 1 · # 0)))
+    ≡⟨⟩
+      ƛ (rename ρ (# 1) · rename ρ (# 1 · # 0))
+    ≡⟨⟩
+      ƛ (rename ρ (# 1) · (rename ρ (# 1) · rename ρ (# 0)))
+    ≡⟨⟩
+      ƛ (rename ρ (` (S Z)) · (rename ρ (` (S Z)) · rename ρ (` Z)))
+    ≡⟨⟩
+      ƛ (` (S (S Z)) · (` (S (S Z)) · (` Z)))
+    ≡⟨⟩
+      ƛ (# 2 · (# 2 · # 0))
+    ≡⟨⟩
+      M₁
+    ≡-∎
+
+  M₃ : ∅ , `ℕ ⇒ `ℕ ⊢ (`ℕ ⇒ `ℕ) ⇒ `ℕ ⇒ `ℕ
+  M₃ = ƛ ƛ (# 2 · (# 1 · # 0))
+
+  M₄ : ∅ , `ℕ ⇒ `ℕ , `ℕ  ⊢ (`ℕ ⇒ `ℕ) ⇒ `ℕ ⇒ `ℕ
+  M₄ = ƛ ƛ (# 3 · (# 1 · # 0))
+
+  _ : rename S_ M₃ ≡ M₄
+  _ =
+    ≡-begin
+      rename S_ M₃
+    ≡⟨⟩
+    let ρ = ext (ext S_)
+    in
+      ƛ ƛ (rename ρ (# 2 · (# 1 · # 0)))
+    ≡⟨⟩
+      ƛ ƛ (rename ρ (# 2) · (rename ρ (# 1) · rename ρ (# 0)))
+    ≡⟨⟩
+      ƛ ƛ (` ext (ext S_) (S (S Z)) · (` ext (ext S_) (S Z) · ` ext (ext S_) Z))
+    ≡⟨⟩
+      ƛ ƛ (` S (ext S_ (S Z)) · (` S (ext S_ Z) · ` Z))
+    ≡⟨⟩
+      ƛ ƛ (` S (S (S_ Z)) · (` S Z · ` Z))
+    ≡⟨⟩
+      ƛ ƛ (# 3 · (# 1 · # 0))
+    ≡⟨⟩
+      M₄
+    ≡-∎
+
 M₀ : ∅ , `ℕ ⇒ `ℕ ⊢ `ℕ ⇒ `ℕ
 M₀ = ƛ (# 1 · (# 1 · # 0))
 
@@ -596,6 +665,7 @@ M₁ = ƛ (# 2 · (# 2 · # 0))
 
 _ : rename S_ M₀ ≡ M₁
 _ = refl
+
 ```
 In general, `rename S_` will increment the de Bruijn index for
 each free variable by one, while leaving the index for each
@@ -697,6 +767,27 @@ From the general case of substitution for multiple free
 variables it is easy to define the special case of
 substitution for one free variable:
 ```agda
+module WrongSingleSubst where
+  -- Just following the type
+  _[_] : ∀ {Γ A B}
+    → Γ , B ⊢ A
+    → Γ ⊢ B
+      ---------
+    → Γ ⊢ A
+  _[_] N M = (ƛ N) · M
+
+  M₂ : ∅ , `ℕ ⇒ `ℕ ⊢ `ℕ ⇒ `ℕ
+  M₂ = ƛ # 1 · (# 1 · # 0)
+
+  M₃ : ∅ ⊢ `ℕ ⇒ `ℕ
+  M₃ = ƛ `suc # 0
+
+  M₄ : ∅ ⊢ `ℕ ⇒ `ℕ
+  M₄ = (ƛ (ƛ ((# 1) · (# 1 · # 0)))) · (ƛ `suc (# 0))
+
+  _ : M₂ [ M₃ ] ≡ M₄
+  _ = refl
+
 _[_] : ∀ {Γ A B}
   → Γ , B ⊢ A
   → Γ ⊢ B
@@ -943,6 +1034,49 @@ _ =
   —→⟨ ξ-suc (ξ-suc β-zero) ⟩
    `suc (`suc (`suc (`suc `zero)))
   ∎
+
+V[zero] : {Γ : Context} → Value {Γ} `zero
+V[zero] = V-zero
+
+one : {Γ : Context} → Γ ⊢ `ℕ
+one = `suc `zero
+
+V[one] : {Γ : Context} → Value {Γ} one
+V[one] = V-suc V[zero]
+
+V[two] : {Γ : Context} → Value {Γ} two
+V[two] = V-suc V[one]
+
+_ : plus {∅} · two · two —↠ `suc `suc `suc `suc `zero
+_ =
+    plus · two · two
+  —→⟨ ξ-·₁ (ξ-·₁ β-μ) ⟩
+    (ƛ ƛ case (# 1) (# 0) (`suc (plus · # 0 · # 1))) · two · two
+  —→⟨ ξ-·₁ (β-ƛ V[two]) ⟩
+    (ƛ case two (# 0) (`suc (plus · # 0 · # 1))) · two
+  —→⟨ β-ƛ V[two] ⟩
+    case two two (`suc (plus · ` Z · two))
+  —→⟨ β-suc V[one] ⟩
+    `suc (plus · one · two)
+  —→⟨ ξ-suc (ξ-·₁ (ξ-·₁ β-μ)) ⟩
+    `suc ((ƛ ƛ case (# 1) (# 0) (`suc (plus · # 0 · # 1)))
+      · one · two)
+  —→⟨ ξ-suc (ξ-·₁ (β-ƛ V[one])) ⟩
+    `suc ((ƛ case one (# 0) (`suc (plus · # 0 · # 1))) · two)
+  —→⟨ ξ-suc (β-ƛ V[two]) ⟩
+    `suc (case one two (`suc (plus · # 0 · two)))
+  —→⟨ ξ-suc (β-suc V[zero]) ⟩
+    `suc (`suc (plus · `zero · two))
+  —→⟨ ξ-suc (ξ-suc (ξ-·₁ (ξ-·₁ β-μ))) ⟩
+    `suc (`suc ((ƛ ƛ case (# 1) (# 0) (`suc (plus · # 0 · # 1)))
+      · `zero · two))
+  —→⟨ ξ-suc (ξ-suc (ξ-·₁ (β-ƛ V[zero]))) ⟩
+    `suc (`suc ((ƛ case `zero (# 0) (`suc (plus · # 0 · # 1))) · two))
+  —→⟨ ξ-suc (ξ-suc (β-ƛ V[two])) ⟩
+    `suc (`suc (case `zero (two) (`suc (plus · ` Z · two))))
+  —→⟨ ξ-suc (ξ-suc β-zero) ⟩
+   `suc (`suc (`suc (`suc `zero)))
+  ∎
 ```
 
 And finally, a similar sample reduction for Church numerals:
@@ -994,7 +1128,10 @@ not reduce, and its corollary, terms that reduce are not
 values.
 
 ```agda
--- Your code goes here
+V¬—→ :
+    {Γ : Context} {A : Type} {M N : Γ ⊢ A}
+  → Value M → ¬ (M —→ N)
+V¬—→ (V-suc V[M]) (ξ-suc M—→N)  =  V¬—→ V[M] M—→N
 ```
 
 ## Progress
@@ -1019,6 +1156,30 @@ data Progress {A} (M : ∅ ⊢ A) : Set where
 The statement and proof of progress is much as before,
 appropriately annotated:
 ```agda
+module VerboseProgress where
+  progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
+  progress (` ())
+  progress (ƛ N) = done V-ƛ
+  progress (L · M)
+    with progress L
+  ...  | step {L′} L—→L′  =  step (ξ-·₁ L—→L′)
+  ...  | done V[L] with progress M
+  ...                 | step {M′} M—→M′  =  step (ξ-·₂ V[L] M—→M′)
+  ...                 | done V[M] with V[L]
+  ...                                | V-ƛ  =  step (β-ƛ V[M])
+  progress `zero = done V-zero
+  progress (`suc M)
+    with progress M
+  ...  | done V[M]      =  done (V-suc V[M])
+  ...  | step {N} M—→N  =  step (ξ-suc M—→N)
+  progress (case L M N)
+    with progress L
+  ...  | step {L′} L—→L′ = step (ξ-case L—→L′)
+  ...  | done V[L] with V[L]
+  ...                 | V-zero      =  step β-zero
+  ...                 | V-suc V[V]  =  step (β-suc V[V])
+  progress (μ N) = step β-μ
+
 progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
 progress (` ())
 progress (ƛ N)                          =  done V-ƛ

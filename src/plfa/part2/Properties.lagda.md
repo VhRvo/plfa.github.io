@@ -161,7 +161,6 @@ Show that `Canonical V ⦂ A` is isomorphic to `(∅ ⊢ V ⦂ A) × (Value V)`,
 that is, the canonical forms are exactly the well-typed values.
 
 ```
--- Your code goes here
 Canonical-≃ : {V : Term} {A : Type} → Canonical V ⦂ A ≃ (∅ ⊢ V ⦂ A) × (Value V)
 Canonical-≃ {V} {A} =
   record

@@ -131,7 +131,7 @@ data _⊑_ : Value → Value → Set where
 
   ⊑-fun : ∀ {v w v′ w′}
     → v′ ⊑ v
-    → w ⊑ w′
+    → w  ⊑ w′
       -------------------
     → (v ↦ w) ⊑ (v′ ↦ w′)
 
@@ -160,10 +160,39 @@ The `⊑` relation is reflexive.
 ⊑-refl {v₁ ⊔ v₂} = ⊑-conj-L (⊑-conj-R1 ⊑-refl) (⊑-conj-R2 ⊑-refl)
 ```
 
+What's about the opposite of `⊑` relation.
+
+```agda
+⊑-dist-inv
+    : ∀ {v w w′ : Value}
+    ---------------------------------
+  → (v ↦ w) ⊔ (v ↦ w′) ⊑ v ↦ (w ⊔ w′)
+⊑-dist-inv {v} {w} {w′}  =  ⊑-conj-L fun-conj-R1 fun-conj-R2
+  where
+    fun-conj-R1 : (v ↦ w) ⊑ v ↦ (w ⊔ w′)
+    fun-conj-R1  =  ⊑-fun ⊑-refl (⊑-conj-R1 ⊑-refl)
+
+    fun-conj-R2 : (v ↦ w′) ⊑ v ↦ (w ⊔ w′)
+    fun-conj-R2  =  ⊑-fun ⊑-refl ((⊑-conj-R2 ⊑-refl))
+```
+
 The `⊔` operation is monotonic with respect to `⊑`, that is, given two
 larger values it produces a larger value.
 
 ```agda
+module Stupid-⊔⊑⊔ where
+  ⊔⊑⊔ : ∀ {v w v′ w′}
+    → v ⊑ v′  →  w ⊑ w′
+      -----------------------
+    → (v ⊔ w) ⊑ (v′ ⊔ w′)
+  ⊔⊑⊔ {v} {w} {v′} {w′} v⊑v′ w⊑w′  =  ⊑-conj-L lemma1 lemma2
+    where
+      lemma1 : v ⊑ v′ ⊔ w′
+      lemma1 =  ⊑-trans v⊑v′ (⊑-conj-R1 ⊑-refl)
+
+      lemma2 : w ⊑ v′ ⊔ w′
+      lemma2 =  ⊑-trans w⊑w′ (⊑-conj-R2 ⊑-refl)
+
 ⊔⊑⊔ : ∀ {v w v′ w′}
   → v ⊑ v′  →  w ⊑ w′
     -----------------------
@@ -177,7 +206,12 @@ using ⊔ and then apply the `⊑-dist` rule to obtain the following
 property.
 
 ```agda
-⊔↦⊔-dist : ∀{v v′ w w′ : Value}
+module Verbose-⊔↦⊔-dist where
+  ⊔↦⊔-dist : ∀ {v v′ w w′ : Value}
+    → (v ⊔ v′) ↦ (w ⊔ w′) ⊑ (v ↦ w) ⊔ (v′ ↦ w′)
+  ⊔↦⊔-dist = {!   !}
+
+⊔↦⊔-dist : ∀ {v v′ w w′ : Value}
   → (v ⊔ v′) ↦ (w ⊔ w′) ⊑ (v ↦ w) ⊔ (v′ ↦ w′)
 ⊔↦⊔-dist = ⊑-trans ⊑-dist (⊔⊑⊔ (⊑-fun (⊑-conj-R1 ⊑-refl) ⊑-refl)
                             (⊑-fun (⊑-conj-R2 ⊑-refl) ⊑-refl))
@@ -365,6 +399,9 @@ containing both of the previous results, `⊥ ↦ ⊥` and
 ```agda
 denot-id3 : `∅ ⊢ id ↓ (⊥ ↦ ⊥) ⊔ (⊥ ↦ ⊥) ↦ (⊥ ↦ ⊥)
 denot-id3 = ⊔-intro denot-id1 denot-id2
+
+denot-id4 : ∀ {γ} → γ ⊢ id ↓ (⊥ ↦ ⊥ ↦ ⊥) ↦ (⊥ ↦ ⊥ ↦ ⊥)
+denot-id4 = ↦-intro var
 ```
 
 We most often think of the judgment `γ ⊢ M ↓ v` as taking the
